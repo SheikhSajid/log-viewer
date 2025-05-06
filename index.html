@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello World!</title>
+
+  </head>
+  <body>
+    <input type="file" id="logFileInput" accept=".txt,.log,.json" />
+    <div id="logControls">
+      <input type="text" id="searchBox" placeholder="Search logs..." />
+    </div>
+    <pre id="logDisplay" style="background:#222;color:#eee;padding:1em;height:400px;overflow:auto;"></pre>
+    <script type="module" src="/src/renderer.ts"></script>
+  </body>
+</html>
