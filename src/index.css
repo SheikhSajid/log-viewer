@@ -45,8 +45,19 @@ body {
   color: #fff;
 }
 .log-meta-label {
-  color: #bdbdbd;
+  color: #888 !important;
+  font-size: 12px;
+  font-weight: normal;
+  opacity: 0.7;
 }
 .log-meta {
-  color: #fff;
+  color: #888 !important;
+  font-size: 12px;
+  font-weight: normal;
+  opacity: 0.7;
+}
+.log-message-main {
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 0.2px;
 }
