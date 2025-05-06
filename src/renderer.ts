@@ -47,6 +47,30 @@ const logSchema = z.object({
   payload: z.unknown().optional(),
 });
 
+// --- Timezone Dropdown Logic ---
+const timezoneSelect = document.getElementById('timezoneSelect') as HTMLSelectElement;
+let selectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function populateTimezones() {
+  if (!timezoneSelect) return;
+  const timezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
+  for (const tz of timezones) {
+    const option = document.createElement('option');
+    option.value = tz;
+    option.textContent = tz;
+    if (tz === selectedTimezone) option.selected = true;
+    timezoneSelect.appendChild(option);
+  }
+}
+
+if (timezoneSelect) {
+  populateTimezones();
+  timezoneSelect.addEventListener('change', () => {
+    selectedTimezone = timezoneSelect.value;
+    displayLogs(validatedLines);
+  });
+}
+
 // --- Log Viewer Logic ---
 const logFileInput = document.getElementById('logFileInput') as HTMLInputElement;
 const logDisplay = document.getElementById('logDisplay') as HTMLPreElement;
@@ -111,7 +135,19 @@ function displayLogs(lines: { valid: boolean; line: string; error?: string }[]) 
         };
         const level: Level = log.level;
         const levelColor = levelColors[level] || '#fff';
-        const time = log.meta?.time_logged ? `<span class='log-time'>${escapeHtml(log.meta.time_logged)}</span>` : '';
+        // Format time_logged in selected timezone
+        let formattedTime = '';
+        if (log.meta?.time_logged) {
+          try {
+            const date = new Date(log.meta.time_logged);
+            formattedTime = new Intl.DateTimeFormat('default', {
+              year: 'numeric', month: 'short', day: '2-digit',
+              hour: '2-digit', minute: '2-digit', second: '2-digit',
+              hour12: true, timeZone: selectedTimezone
+            }).format(date);
+          } catch {}
+        }
+        const time = formattedTime ? `<span class='log-time'>${escapeHtml(formattedTime)}</span>` : '';
         const name = log.meta?.name ? `<span class='log-name'>${escapeHtml(log.meta.name)}</span>` : '';
         const message = `<span class='log-message-main' data-level='${level}'>${escapeHtml(log.message)}</span>`;
         let extra = '';
