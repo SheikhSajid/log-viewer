@@ -6,10 +6,9 @@ body {
 }
 
 .log-message {
-  background: #1e1e1e;
   padding: 4px 0;
-  font-family: 'Segoe UI', 'Consolas', 'monospace', monospace;
   font-size: 14px;
+  height: 20px;
 }
 
 /* .log-valid {} */
