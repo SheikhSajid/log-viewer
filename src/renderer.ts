@@ -27,8 +27,25 @@
  */
 
 import './index.css';
+import { z } from 'zod';
 
 console.log('👋 This message is being logged by "renderer.ts", included via Vite');
+
+// Zod schema for log validation
+const logSchema = z.object({
+  level: z.string(), // Accept any string, can refine for specific values
+  message: z.string(),
+  meta: z.object({
+    mac_address: z.string(),
+    name: z.string(),
+    org_id: z.string(),
+    pid: z.number(),
+    process: z.literal('box'),
+    time_logged: z.string().transform((str) => new Date(str)),
+    version: z.string(),
+  }),
+  payload: z.unknown().optional(),
+});
 
 // --- Log Viewer Logic ---
 const logFileInput = document.getElementById('logFileInput') as HTMLInputElement;
@@ -36,6 +53,7 @@ const logDisplay = document.getElementById('logDisplay') as HTMLPreElement;
 const searchBox = document.getElementById('searchBox') as HTMLInputElement;
 
 let logLines: string[] = [];
+let validatedLines: { valid: boolean; line: string; error?: string }[] = [];
 
 if (logFileInput) {
   logFileInput.addEventListener('change', (event) => {
@@ -45,7 +63,17 @@ if (logFileInput) {
     reader.onload = (e) => {
       const text = e.target?.result as string;
       logLines = text.split(/\r?\n/);
-      displayLogs(logLines);
+      validatedLines = logLines.map((line) => {
+        if (!line.trim()) return { valid: false, line };
+        try {
+          const parsed = JSON.parse(line);
+          logSchema.parse(parsed);
+          return { valid: true, line };
+        } catch (err: any) {
+          return { valid: false, line, error: err.message };
+        }
+      });
+      displayLogs(validatedLines);
     };
     reader.readAsText(file);
   });
@@ -54,16 +82,39 @@ if (logFileInput) {
 if (searchBox) {
   searchBox.addEventListener('input', (event) => {
     const query = searchBox.value.trim().toLowerCase();
-    if (!query) {
-      displayLogs(logLines);
-    } else {
-      const filtered = logLines.filter(line => line.toLowerCase().includes(query));
-      displayLogs(filtered);
+    let filtered = validatedLines;
+    if (query) {
+      filtered = validatedLines.filter(({ line }) => line.toLowerCase().includes(query));
     }
+    displayLogs(filtered);
   });
 }
 
-function displayLogs(lines: string[]) {
+function displayLogs(lines: { valid: boolean; line: string; error?: string }[]) {
   if (!logDisplay) return;
-  logDisplay.textContent = lines.join('\n');
+  logDisplay.innerHTML = lines
+    .map(({ valid, line, error }) => {
+      if (!line.trim()) return '';
+      if (valid) {
+        return `<span style="color:#8f8">${escapeHtml(line)}</span>`;
+      } else {
+        console.warn(line);
+        console.warn(error);
+        return `<span style="color:#f88">${escapeHtml(line)}</span>`;
+      }
+    })
+    .join('<br>');
+}
+
+function escapeHtml(text: string) {
+  return text.replace(/[&<>"']/g, function (m) {
+    switch (m) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#39;';
+      default: return m;
+    }
+  });
 }
