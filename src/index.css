@@ -8,7 +8,8 @@ body {
 .log-message {
   padding: 4px 0;
   font-size: 14px;
-  height: 20px;
+  /* height: 20px; Removed to allow expansion */
+  position: relative; /* For positioning pseudo-elements like indicators */
 }
 
 /* .log-valid {} */
@@ -60,4 +61,37 @@ body {
   font-size: 16px;
   font-weight: bold;
   letter-spacing: 0.2px;
+}
+
+.log-collapsible {
+  cursor: pointer;
+}
+
+.log-collapsible .log-payload-container {
+  display: none;
+  margin-left: 20px; /* Indent payload slightly */
+  padding-top: 5px;
+  margin-top: 5px;
+  border-left: 2px solid #444; /* Visual cue for payload block */
+  padding-left: 10px;
+}
+
+.log-collapsible[data-expanded="true"] .log-payload-container {
+  display: block;
+}
+
+/* Optional: Indicator for collapsible sections */
+.log-collapsible::before {
+  content: '+';
+  position: absolute;
+  left: -12px; /* Adjust as needed if you have line numbers or other elements */
+  top: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #888;
+  padding-right: 5px;
+}
+
+.log-collapsible[data-expanded="true"]::before {
+  content: '-';
 }

@@ -114,6 +114,19 @@ if (searchBox) {
   });
 }
 
+if (logDisplay) {
+  logDisplay.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    // Find the closest ancestor with the 'log-collapsible' class
+    const logMessageDiv = target.closest('.log-collapsible') as HTMLElement;
+
+    if (logMessageDiv) {
+      const isExpanded = logMessageDiv.dataset.expanded === 'true';
+      logMessageDiv.dataset.expanded = (!isExpanded).toString();
+    }
+  });
+}
+
 function displayLogs(lines: { valid: boolean; line: string; error?: string }[]) {
   if (!logDisplay) return;
   logDisplay.innerHTML = lines
@@ -150,15 +163,20 @@ function displayLogs(lines: { valid: boolean; line: string; error?: string }[]) 
         const time = formattedTime ? `<span class='log-time'>${escapeHtml(formattedTime)}</span>` : '';
         const name = log.meta?.name ? `<span class='log-name'>${escapeHtml(log.meta.name)}</span>` : '';
         const message = `<span class='log-message-main' data-level='${level}'>${escapeHtml(log.message)}</span>`;
-        let extra = '';
+        
+        const commonMeta = ` <span class='log-meta-label'>pid:</span><span class='log-meta'>${escapeHtml(String(log.meta.pid))}</span> <span class='log-meta-label'>ver:</span><span class='log-meta'>${escapeHtml(log.meta.version)}</span>`;
+
         if (log.payload) {
-          extra += `<span class='log-payload-label'> payload:</span> <span class='log-payload'>${escapeHtml(JSON.stringify(log.payload))}</span>`;
+          const payloadHTML = `<div class="log-payload-container"><span class='log-payload-label'> payload:</span> <span class='log-payload'>${escapeHtml(JSON.stringify(log.payload))}</span></div>`;
+          return `<div class="log-message log-valid log-level-${level} log-collapsible" data-expanded="false">
+            ${time} ${name} ${message}${commonMeta}
+            ${payloadHTML}
+          </div>`;
+        } else {
+          return `<div class="log-message log-valid log-level-${level}">
+            ${time} ${name} ${message}${commonMeta}
+          </div>`;
         }
-        extra += ` <span class='log-meta-label'>pid:</span><span class='log-meta'>${escapeHtml(String(log.meta.pid))}</span>`;
-        extra += ` <span class='log-meta-label'>ver:</span><span class='log-meta'>${escapeHtml(log.meta.version)}</span>`;
-        return `<div class="log-message log-valid log-level-${level}">
-          ${time} ${name} ${message}${extra}
-        </div>`;
       } catch (e) {
         return `<div class="log-message log-invalid">
           <span class="log-invalid-label">[UNSUPPORTED FORMAT]</span> ${escapeHtml(line)}
