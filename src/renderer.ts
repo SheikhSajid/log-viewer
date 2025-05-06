@@ -33,7 +33,7 @@ console.log('👋 This message is being logged by "renderer.ts", included via Vi
 
 // Zod schema for log validation
 const logSchema = z.object({
-  level: z.string(), // Accept any string, can refine for specific values
+  level: z.enum(['verbose', 'info', 'error']),
   message: z.string(),
   meta: z.object({
     mac_address: z.string(),
