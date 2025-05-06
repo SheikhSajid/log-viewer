@@ -95,15 +95,43 @@ function displayLogs(lines: { valid: boolean; line: string; error?: string }[]) 
   logDisplay.innerHTML = lines
     .map(({ valid, line, error }) => {
       if (!line.trim()) return '';
-      if (valid) {
-        return `<span style="color:#8f8">${escapeHtml(line)}</span>`;
-      } else {
-        console.warn(line);
-        console.warn(error);
-        return `<span style="color:#f88">${escapeHtml(line)}</span>`;
+      if (!valid) {
+        // Invalid JSON or schema
+        return `<div style="color:#f44336;background:#1e1e1e;padding:4px 0;">
+          <span style="color:#f44336;">[UNSUPPORTED FORMAT]</span> ${escapeHtml(line)}
+        </div>`;
+      }
+      try {
+        const log = JSON.parse(line);
+        // Chrome DevTools style colors
+        type Level = 'verbose' | 'info' | 'error';
+        const levelColors: Record<Level, string> = {
+          verbose: '#9e9e9e',
+          info:    '#2196f3',
+          error:   '#f44336',
+        };
+        const level: Level = log.level;
+        const levelColor = levelColors[level] || '#fff';
+        const time = log.meta?.time_logged ? `<span style='color:#bdbdbd;'>${escapeHtml(log.meta.time_logged)}</span>` : '';
+        const name = log.meta?.name ? `<span style='color:#8bc34a;'>${escapeHtml(log.meta.name)}</span>` : '';
+        const message = `<span style='color:${levelColor};font-weight:bold;'>${escapeHtml(log.message)}</span>`;
+        let extra = '';
+        if (log.payload) {
+          extra += `<span style='color:#ffb300;'> payload:</span> <span style='color:#fff;'>${escapeHtml(JSON.stringify(log.payload))}</span>`;
+        }
+        // Show additional meta fields
+        extra += ` <span style='color:#bdbdbd;'>pid:</span><span style='color:#fff;'>${escapeHtml(String(log.meta.pid))}</span>`;
+        extra += ` <span style='color:#bdbdbd;'>ver:</span><span style='color:#fff;'>${escapeHtml(log.meta.version)}</span>`;
+        return `<div style="background:#1e1e1e;padding:4px 0;">
+          ${time} ${name} ${message}${extra}
+        </div>`;
+      } catch (e) {
+        return `<div style="color:#f44336;background:#1e1e1e;padding:4px 0;">
+          <span style="color:#f44336;">[UNSUPPORTED FORMAT]</span> ${escapeHtml(line)}
+        </div>`;
       }
     })
-    .join('<br>');
+    .join('');
 }
 
 function escapeHtml(text: string) {
