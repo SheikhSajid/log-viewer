@@ -93,7 +93,7 @@ if (searchBox) {
 function displayLogs(lines: { valid: boolean; line: string; error?: string }[]) {
   if (!logDisplay) return;
   logDisplay.innerHTML = lines
-    .map(({ valid, line, error }) => {
+    .map(({ valid, line }) => {
       if (!line.trim()) return '';
       if (!valid) {
         // Invalid JSON or schema
@@ -104,7 +104,7 @@ function displayLogs(lines: { valid: boolean; line: string; error?: string }[]) 
       try {
         const log = JSON.parse(line);
         // Chrome DevTools style colors
-        type Level = 'verbose' | 'info' | 'error';
+        type Level = z.infer<typeof logSchema>['level'];
         const levelColors: Record<Level, string> = {
           verbose: '#9e9e9e',
           info:    '#2196f3',
