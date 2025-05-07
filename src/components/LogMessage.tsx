@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 // Zod schema for log validation
 export const logSchema = z.object({
-  level: z.enum(['verbose', 'info', 'error']),
+  level: z.enum(['verbose', 'info', 'error', 'warn']),
   message: z.string(),
   meta: z.object({
     mac_address: z.string(),
@@ -56,6 +56,7 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
     verbose: '#9e9e9e',
     info: '#2196f3',
     error: '#f44336',
+    warn: '#ff9800',
   };
   const levelColor = levelColors[log.level] || '#fff'; // Fallback color
 
