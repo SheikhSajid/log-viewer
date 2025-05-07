@@ -47,7 +47,6 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
     return (
       <div className="log-message log-invalid">
         <span className="log-invalid-label">[UNSUPPORTED FORMAT]</span> {escapeHtml(logLine.line)}
-        {logLine.error && <span className="log-error-detail"> Error: {logLine.error}</span>}
       </div>
     );
   }
