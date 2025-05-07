@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import LogMessage, { logSchema, ValidatedLogLine } from './components/LogMessage';
+import LogMessage, { ValidatedLogLine } from './components/LogMessage';
+import FileInput from './components/FileInput';
 
 console.log('👋 This message is being logged by "renderer.tsx", included via Vite');
 
@@ -17,39 +18,6 @@ const App: React.FC = () => {
     setTimezones(availableTimezones);
   }, [selectedTimezone]);
 
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const lines = text.split(/\r?\n/);
-      const processedLines = lines.map((line, index) => {
-        const id = `log-${Date.now()}-${index}`; // Simple unique ID
-        if (!line.trim()) return { valid: false, line, id };
-        try {
-          const parsed = JSON.parse(line);
-          const validationResult = logSchema.safeParse(parsed);
-          if (validationResult.success) {
-            return { valid: true, line, parsedLog: validationResult.data, id };
-          } else {
-            // Log Zod error for debugging, but show generic error to user
-            console.error("Zod validation error:", validationResult.error.flatten());
-            return { valid: false, line, error: "Schema validation failed", id };
-          }
-        } catch (err) {
-          let errorMessage = "JSON parsing failed";
-          if (err instanceof Error) {
-            errorMessage = err.message;
-          }
-          return { valid: false, line, error: errorMessage, id };
-        }
-      });
-      setAllLogs(processedLines);
-    };
-    reader.readAsText(file);
-  }, []);
-
   useEffect(() => {
     let currentLogs = allLogs;
     if (searchTerm.trim()) {
@@ -58,10 +26,9 @@ const App: React.FC = () => {
     setFilteredLogs(currentLogs);
   }, [allLogs, searchTerm]);
 
-
   return (
     <>
-      <input type="file" id="logFileInput" accept=".txt,.log,.json" onChange={handleFileChange} />
+      <FileInput onLogsLoaded={setAllLogs} />
       <div id="timezoneControls" style={{ marginBottom: '1em' }}>
         <label htmlFor="timezoneSelect">Timezone:</label>
         <select id="timezoneSelect" value={selectedTimezone} onChange={(e) => setSelectedTimezone(e.target.value)}>
