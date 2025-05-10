@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import LogMessage, { ValidatedLogLine } from './components/LogMessage';
 import FileInput from './components/FileInput';
-import { Navbar, NavbarGroup, NavbarHeading, Alignment } from "@blueprintjs/core";
+import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup } from "@blueprintjs/core";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 
@@ -34,6 +34,15 @@ const App: React.FC = () => {
       <Navbar>
         <NavbarGroup align={Alignment.LEFT}>
           <NavbarHeading>Log Viewer</NavbarHeading>
+          <InputGroup
+            leftIcon="search"
+            placeholder="Search logs..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            fill={false}
+            id="searchBox"
+            data-testid="searchBox"
+          />
         </NavbarGroup>
       </Navbar>
       <FileInput onLogsLoaded={setAllLogs} />
@@ -42,15 +51,6 @@ const App: React.FC = () => {
         <select id="timezoneSelect" value={selectedTimezone} onChange={(e) => setSelectedTimezone(e.target.value)}>
           {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
         </select>
-      </div>
-      <div id="logControls">
-        <input
-          type="text"
-          id="searchBox"
-          placeholder="Search logs..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </div>
       <div id="logDisplayReact" style={{ background: '#222', color: '#eee', padding: '1em', minHeight: '400px', overflow: 'auto' }}>
         {filteredLogs.map((logLine) => (
