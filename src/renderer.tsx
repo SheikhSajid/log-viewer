@@ -32,26 +32,34 @@ const App: React.FC = () => {
   return (
     <>
       <Navbar>
-        <NavbarGroup align={Alignment.LEFT}>
+        <NavbarGroup align={Alignment.LEFT} style={{ width: '100%' }}>
           <NavbarHeading>Log Viewer</NavbarHeading>
           <InputGroup
             leftIcon="search"
             placeholder="Search logs..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             fill={false}
             id="searchBox"
             data-testid="searchBox"
           />
+          <div style={{ marginLeft: 20 }}>
+            <label htmlFor="timezoneSelect" style={{ color: 'white', marginRight: 8 }}>Timezone:</label>
+            <select
+              id="timezoneSelect"
+              value={selectedTimezone}
+              onChange={(e) => setSelectedTimezone(e.target.value)}
+              style={{ minWidth: 180 }}
+            >
+              {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }} />
+          <div style={{ marginLeft: 20 }}>
+            <FileInput onLogsLoaded={setAllLogs} />
+          </div>
         </NavbarGroup>
       </Navbar>
-      <FileInput onLogsLoaded={setAllLogs} />
-      <div id="timezoneControls" style={{ marginBottom: '1em' }}>
-        <label htmlFor="timezoneSelect">Timezone:</label>
-        <select id="timezoneSelect" value={selectedTimezone} onChange={(e) => setSelectedTimezone(e.target.value)}>
-          {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
-        </select>
-      </div>
       <div id="logDisplayReact" style={{ background: '#222', color: '#eee', padding: '1em', minHeight: '400px', overflow: 'auto' }}>
         {filteredLogs.map((logLine) => (
           <LogMessage key={logLine.id} logLine={logLine} selectedTimezone={selectedTimezone} />
