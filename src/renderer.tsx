@@ -83,7 +83,7 @@ const App: React.FC = () => {
         isOpen={drawerOpen}
         onClose={handleDrawerClose}
         position="right"
-        size={400}
+        size="60vw"
         title="Log Details"
       >
         {selectedLog && selectedLog.valid && selectedLog.parsedLog && (
@@ -120,6 +120,11 @@ const App: React.FC = () => {
             <div style={{ marginBottom: 10 }}>
               <b>Meta:</b>
               <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4 }}>{JSON.stringify(selectedLog.parsedLog.meta, null, 2)}</pre>
+            </div>
+            <Divider />
+            <div style={{ marginBottom: 10 }}>
+              <b>Raw Line:</b>
+              <pre style={{ background: '#1a1a1a', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4, overflowX: 'auto' }}>{selectedLog.line}</pre>
             </div>
           </Card>
         )}
