@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import LogMessage, { ValidatedLogLine } from './components/LogMessage';
 import FileInput from './components/FileInput';
+import { Navbar, NavbarGroup, NavbarHeading, Alignment } from "@blueprintjs/core";
+import "@blueprintjs/core/lib/css/blueprint.css";
+import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 
 console.log('👋 This message is being logged by "renderer.tsx", included via Vite');
 
@@ -28,6 +31,11 @@ const App: React.FC = () => {
 
   return (
     <>
+      <Navbar>
+        <NavbarGroup align={Alignment.LEFT}>
+          <NavbarHeading>Log Viewer</NavbarHeading>
+        </NavbarGroup>
+      </Navbar>
       <FileInput onLogsLoaded={setAllLogs} />
       <div id="timezoneControls" style={{ marginBottom: '1em' }}>
         <label htmlFor="timezoneSelect">Timezone:</label>
