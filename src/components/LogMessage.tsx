@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { z } from 'zod';
+import { H5, Text, Divider, Tag, Tooltip } from "@blueprintjs/core";
 
 // Zod schema for log validation
 export const logSchema = z.object({
@@ -38,6 +39,13 @@ export function escapeHtml(text: string) {
   });
 }
 
+const levelProps: Record<LogEntry['level'], { color: string; label: string }> = {
+  verbose: { color: '#9e9e9e', label: 'Verbose' },
+  info: { color: '#2196f3', label: 'Info' },
+  error: { color: '#f44336', label: 'Error' },
+  warn: { color: '#ff9800', label: 'Warning' },
+};
+
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -45,60 +53,47 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
 
   if (!logLine.valid || !logLine.parsedLog) {
     return (
-      <div className="log-message log-invalid">
-        <span className="log-invalid-label">[UNSUPPORTED FORMAT]</span> {escapeHtml(logLine.line)}
+      <div style={{ padding: '12px 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', fontFamily: 'monospace', fontSize: 14 }}>
+        <Tag minimal intent="danger" style={{ marginRight: 8, minWidth: 8, height: 16, background: '#e53935' }} />
+        <Text intent="danger" style={{ fontWeight: 600 }}>[UNSUPPORTED FORMAT]</Text> <Text style={{ marginLeft: 8 }}>{escapeHtml(logLine.line)}</Text>
       </div>
     );
   }
 
   const log = logLine.parsedLog;
-  const levelColors: Record<LogEntry['level'], string> = {
-    verbose: '#9e9e9e',
-    info: '#2196f3',
-    error: '#f44336',
-    warn: '#ff9800',
-  };
-  const levelColor = levelColors[log.level] || '#fff'; // Fallback color
+  const level = levelProps[log.level];
 
-  let formattedTime = '';
-  if (log.meta?.time_logged) {
-    try {
-      const date = new Date(log.meta.time_logged);
-      formattedTime = new Intl.DateTimeFormat('default', {
-        year: 'numeric', month: 'short', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        hour12: true, timeZone: selectedTimezone,
-      }).format(date);
-    } catch (e) {
-      console.error("Error formatting time: ", e);
-    }
-  }
-
-  const time = formattedTime ? <span className='log-time'>{escapeHtml(formattedTime)}</span> : null;
-  const name = log.meta?.name ? <span className='log-name'>{escapeHtml(log.meta.name)}</span> : null;
-  const message = <span className='log-message-main' data-level={log.level} style={{ color: levelColor }}>{escapeHtml(log.message)}</span>;
-  const commonMeta = <> <span className='log-meta-label'>pid:</span><span className='log-meta'>{escapeHtml(String(log.meta.pid))}</span> <span className='log-meta-label'>ver:</span><span className='log-meta'>{escapeHtml(log.meta.version)}</span></>;
-
-  const toggleExpand = () => {
-    if (log.payload) {
-      setIsExpanded(!isExpanded);
-    }
-  };
-
+  // Table-like row layout
   return (
-    <div
-      className={`log-message log-valid log-level-${log.level} ${log.payload ? 'log-collapsible' : ''}`}
-      onClick={toggleExpand}
-      data-expanded={isExpanded}
-    >
-      {time} {name} {message}{commonMeta}
-      {log.payload && isExpanded && (
-        <div className="log-payload-container">
-          <span className='log-payload-label'> payload:</span>
-          <pre className='log-payload'>{escapeHtml(JSON.stringify(log.payload, null, 2))}</pre>
+    <>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '32px 220px 220px 1fr',
+        alignItems: 'center',
+        fontFamily: 'monospace',
+        fontSize: 14,
+        padding: '0 0',
+        minHeight: 32,
+        borderBottom: '1px solid #eee',
+        background: '#fff',
+        cursor: 'pointer',
+      }}>
+        {/* Level indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Tooltip content={level.label} position="right">
+            <Tag minimal style={{ background: level.color, minWidth: 8, height: 16, borderRadius: 4, marginRight: 0, padding: 0 }} />
+          </Tooltip>
         </div>
-      )}
-    </div>
+        {/* Date/time */}
+        <div style={{ color: '#222', whiteSpace: 'pre', fontWeight: 500 }}>{log.meta && log.meta.time_logged ? new Date(log.meta.time_logged).toLocaleString('en-CA', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: selectedTimezone }) + '.' + String(new Date(log.meta.time_logged).getMilliseconds()).padStart(3, '0') : ''}</div>
+        {/* Host */}
+        <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.meta.name}>{log.meta.name}</div>
+        {/* Message/Content */}
+        <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {log.message}
+        </div>
+      </div>
+    </>
   );
 };
 
