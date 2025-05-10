@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import LogMessage, { ValidatedLogLine } from './components/LogMessage';
 import FileInput from './components/FileInput';
-import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup } from "@blueprintjs/core";
+import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup, Drawer, Card, H4, Callout, Code, Divider } from "@blueprintjs/core";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 
@@ -15,6 +15,8 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTimezone, setSelectedTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [timezones, setTimezones] = useState<string[]>([]);
+  const [selectedLog, setSelectedLog] = useState<ValidatedLogLine | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
@@ -28,6 +30,16 @@ const App: React.FC = () => {
     }
     setFilteredLogs(currentLogs);
   }, [allLogs, searchTerm]);
+
+  const handleLogClick = (log: ValidatedLogLine) => {
+    setSelectedLog(log);
+    setDrawerOpen(true);
+  };
+
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
+    setSelectedLog(null);
+  };
 
   return (
     <>
@@ -62,9 +74,59 @@ const App: React.FC = () => {
       </Navbar>
       <div id="logDisplayReact" style={{ background: '#222', color: '#eee', padding: '1em', minHeight: '400px', overflow: 'auto' }}>
         {filteredLogs.map((logLine) => (
-          <LogMessage key={logLine.id} logLine={logLine} selectedTimezone={selectedTimezone} />
+          <div key={logLine.id} onClick={() => handleLogClick(logLine)} style={{ cursor: 'pointer' }}>
+            <LogMessage logLine={logLine} selectedTimezone={selectedTimezone} />
+          </div>
         ))}
       </div>
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={handleDrawerClose}
+        position="right"
+        size={400}
+        title="Log Details"
+      >
+        {selectedLog && selectedLog.valid && selectedLog.parsedLog && (
+          <Card style={{ margin: 0 }}>
+            <H4>Log Details</H4>
+            <Divider />
+            <div style={{ marginBottom: 10 }}>
+              <b>Timestamp:</b> {new Intl.DateTimeFormat('default', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: selectedTimezone }).format(new Date(selectedLog.parsedLog.meta.time_logged))}
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <b>Level:</b> <Callout intent={selectedLog.parsedLog.level === 'error' ? 'danger' : selectedLog.parsedLog.level === 'warn' ? 'warning' : selectedLog.parsedLog.level === 'info' ? 'primary' : 'none'}>{selectedLog.parsedLog.level}</Callout>
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <b>Source:</b> {selectedLog.parsedLog.meta.name}
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <b>Message:</b> <Code style={{ whiteSpace: 'pre-wrap' }}>{selectedLog.parsedLog.message}</Code>
+            </div>
+            <Divider />
+            <div style={{ marginBottom: 10 }}>
+              <b>Stack Trace:</b>
+              {selectedLog.parsedLog.payload && (selectedLog.parsedLog.payload as any).stack ? (
+                <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4 }}>{(selectedLog.parsedLog.payload as any).stack}</pre>
+              ) : (
+                <span style={{ color: '#888' }}>N/A</span>
+              )}
+            </div>
+            <Divider />
+            <div style={{ marginBottom: 10 }}>
+              <b>Additional Data:</b>
+              <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4 }}>{JSON.stringify(selectedLog.parsedLog.payload, null, 2)}</pre>
+            </div>
+            <Divider />
+            <div style={{ marginBottom: 10 }}>
+              <b>Meta:</b>
+              <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4 }}>{JSON.stringify(selectedLog.parsedLog.meta, null, 2)}</pre>
+            </div>
+          </Card>
+        )}
+        {selectedLog && (!selectedLog.valid || !selectedLog.parsedLog) && (
+          <Callout intent="danger">Invalid log format</Callout>
+        )}
+      </Drawer>
     </>
   );
 };
