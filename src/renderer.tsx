@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup, Drawer, Card, H4, Callout, Code, Divider, H5, Button, Checkbox } from "@blueprintjs/core";
-
+import { Drawer, Card, H4, Callout, Code, Divider } from "@blueprintjs/core";
 import LogMessage, { LogLevel, ValidatedLogLine } from './components/LogMessage';
-import FileInput from './components/FileInput';
 import Sidebar, { logSource } from './components/Sidebar';
+import NavbarBar from './components/NavbarBar';
 
 import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -66,35 +65,14 @@ const App: React.FC = () => {
 
       {/* Main content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Navbar>
-          <NavbarGroup align={Alignment.LEFT} style={{ width: '100%' }}>
-            <NavbarHeading>Log Viewer</NavbarHeading>
-            <InputGroup
-              leftIcon="search"
-              placeholder="Search logs..."
-              value={searchTerm}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-              fill={false}
-              id="searchBox"
-              data-testid="searchBox"
-            />
-            <div style={{ marginLeft: 20 }}>
-              <label htmlFor="timezoneSelect" style={{ color: 'white', marginRight: 8 }}>Timezone:</label>
-              <select
-                id="timezoneSelect"
-                value={selectedTimezone}
-                onChange={(e) => setSelectedTimezone(e.target.value)}
-                style={{ minWidth: 180 }}
-              >
-                {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: 1 }} />
-            <div style={{ marginLeft: 20 }}>
-              <FileInput onLogsLoaded={setAllLogs} />
-            </div>
-          </NavbarGroup>
-        </Navbar>
+        <NavbarBar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedTimezone={selectedTimezone}
+          setSelectedTimezone={setSelectedTimezone}
+          timezones={timezones}
+          onLogsLoaded={setAllLogs}
+        />
         <div id="logDisplayReact">
           {filteredLogs.map((logLine) => (
             <div key={logLine.id} onClick={() => handleLogClick(logLine)} style={{ cursor: 'pointer' }}>
