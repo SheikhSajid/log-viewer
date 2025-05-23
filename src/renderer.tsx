@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import LogMessage, { LogLevel, ValidatedLogLine } from './components/LogMessage';
+import { LogLevel, ValidatedLogLine } from './components/LogMessage';
 import Sidebar, { logSource } from './components/Sidebar';
 import NavbarBar from './components/NavbarBar';
 import LogDrawer from './components/LogDrawer';
+import LogContainer from './components/LogContainer';
 
 import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -73,13 +74,11 @@ const App: React.FC = () => {
           timezones={timezones}
           onLogsLoaded={setAllLogs}
         />
-        <div id="logDisplayReact">
-          {filteredLogs.map((logLine) => (
-            <div key={logLine.id} onClick={() => handleLogClick(logLine)} style={{ cursor: 'pointer' }}>
-              <LogMessage logLine={logLine} selectedTimezone={selectedTimezone} />
-            </div>
-          ))}
-        </div>
+        <LogContainer
+          filteredLogs={filteredLogs}
+          onLogClick={handleLogClick}
+          selectedTimezone={selectedTimezone}
+        />
         <LogDrawer
           isOpen={drawerOpen}
           onClose={handleDrawerClose}
