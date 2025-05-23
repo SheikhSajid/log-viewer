@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { z } from 'zod';
-import { H5, Text, Divider, Tag, Tooltip } from "@blueprintjs/core";
+import { Text, Tag, Tooltip } from "@blueprintjs/core";
 
 // Zod schema for log validation
 export const logSchema = z.object({
@@ -19,6 +19,8 @@ export const logSchema = z.object({
 });
 
 type LogEntry = z.infer<typeof logSchema>;
+export type LogLevel = LogEntry['level'];
+
 export interface ValidatedLogLine {
   valid: boolean;
   line: string;
@@ -39,7 +41,7 @@ export function escapeHtml(text: string) {
   });
 }
 
-const levelProps: Record<LogEntry['level'], { color: string; label: string }> = {
+const levelProps: Record<LogLevel, { color: string; label: string }> = {
   verbose: { color: '#9e9e9e', label: 'Verbose' },
   info: { color: '#2196f3', label: 'Info' },
   error: { color: '#f44336', label: 'Error' },
@@ -47,15 +49,13 @@ const levelProps: Record<LogEntry['level'], { color: string; label: string }> = 
 };
 
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   if (!logLine.line.trim()) return null;
 
   if (!logLine.valid || !logLine.parsedLog) {
     return (
       <div style={{ padding: '12px 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', fontFamily: 'monospace', fontSize: 14 }}>
         <Tag minimal intent="danger" style={{ marginRight: 8, minWidth: 8, height: 16, background: '#e53935' }} />
-        <Text intent="danger" style={{ fontWeight: 600 }}>[UNSUPPORTED FORMAT]</Text> <Text style={{ marginLeft: 8 }}>{escapeHtml(logLine.line)}</Text>
+        <Text style={{ fontWeight: 600, color: '#d9534f' }}>[UNSUPPORTED FORMAT]</Text> <Text style={{ marginLeft: 8 }}>{escapeHtml(logLine.line)}</Text>
       </div>
     );
   }

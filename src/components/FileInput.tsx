@@ -1,6 +1,6 @@
 import React from 'react';
 import { logSchema, ValidatedLogLine } from './LogMessage';
-import { Button, FileInput as BPFileInput } from "@blueprintjs/core";
+import { FileInput as BPFileInput } from "@blueprintjs/core";
 
 interface FileInputProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
