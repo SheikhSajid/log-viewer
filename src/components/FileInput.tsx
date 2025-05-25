@@ -1,6 +1,6 @@
 import React from 'react';
 import { logSchema, ValidatedLogLine } from './LogMessage';
-import { FileInput as BPFileInput } from "@blueprintjs/core";
+import { Icon } from "@blueprintjs/core";
 
 interface FileInputProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
@@ -55,17 +55,18 @@ const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
   };
 
   return (
-    <BPFileInput
-      text="Choose log files..."
-      inputProps={{
-        id: "logFileInput",
-        multiple: true,
-        onChange: handleFileChange,
-        accept: ".log,.txt,.json"
-      }}
-      fill={false}
-      large={false}
-    />
+    <label style={{ display: "flex", alignItems: "center", cursor: "pointer", border: "1px solid #ccc", borderRadius: 3, padding: "6px 12px", background: "#f5f8fa", fontSize: 16, fontFamily: 'inherit', width: "fit-content" }} htmlFor="logFileInput">
+      <Icon icon="document-open" style={{ marginRight: 8 }} />
+      Choose log files...
+      <input
+        id="logFileInput"
+        type="file"
+        multiple
+        onChange={handleFileChange}
+        accept=".log,.txt,.json"
+        style={{ display: "none" }}
+      />
+    </label>
   );
 };
 
