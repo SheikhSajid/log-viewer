@@ -80,7 +80,7 @@ const App: React.FC = () => {
           onLogsLoaded={setAllLogs}
         />
         <LogContainer
-          filteredLogs={filteredLogs}
+          logLines={filteredLogs}
           onLogClick={handleLogClick}
           selectedTimezone={selectedTimezone}
         />
