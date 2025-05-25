@@ -6,6 +6,31 @@ interface FileInputProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
 }
 
+function validateLogLines(lines: string[]): ValidatedLogLine[] {
+    const processedLines = lines.map((line, index) => {
+      const id = `log-${Date.now()}-${index}`;
+      if (!line.trim()) return { valid: false, line, id };
+      try {
+        const parsed = JSON.parse(line);
+        const validationResult = logSchema.safeParse(parsed);
+        if (validationResult.success) {
+          return { valid: true, line, parsedLog: validationResult.data, id };
+        } else {
+          console.error('Zod validation error:', validationResult.error.flatten());
+          return { valid: false, line, error: 'Schema validation failed', id };
+        }
+      } catch (err) {
+        let errorMessage = 'JSON parsing failed';
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        return { valid: false, line, error: errorMessage, id };
+      }
+    });
+
+    return processedLines;
+}
+
 const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -20,34 +45,17 @@ const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
         const lines = text.split(/\r?\n/);
         allLines.push(...lines);
         filesRead++;
+        
         if (filesRead === files.length) {
-          const processedLines = allLines.map((line, index) => {
-            const id = `log-${Date.now()}-${index}`;
-            if (!line.trim()) return { valid: false, line, id };
-            try {
-              const parsed = JSON.parse(line);
-              const validationResult = logSchema.safeParse(parsed);
-              if (validationResult.success) {
-                return { valid: true, line, parsedLog: validationResult.data, id };
-              } else {
-                console.error('Zod validation error:', validationResult.error.flatten());
-                return { valid: false, line, error: 'Schema validation failed', id };
-              }
-            } catch (err) {
-              let errorMessage = 'JSON parsing failed';
-              if (err instanceof Error) {
-                errorMessage = err.message;
-              }
-              return { valid: false, line, error: errorMessage, id };
-            }
-          });
+          const parsedLines = validateLogLines(allLines);
+
           // Sort by time_logged if available
-          processedLines.sort((a, b) => {
+          parsedLines.sort((a, b) => {
             const aTime = a.valid && a.parsedLog ? a.parsedLog.meta.time_logged.getTime() : 0;
             const bTime = b.valid && b.parsedLog ? b.parsedLog.meta.time_logged.getTime() : 0;
             return aTime - bTime;
           });
-          onLogsLoaded(processedLines);
+          onLogsLoaded(parsedLines);
         }
       };
       reader.readAsText(file);
