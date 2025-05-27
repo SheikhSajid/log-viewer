@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { H5, Button, Checkbox } from "@blueprintjs/core";
 import { DateInput3 } from "@blueprintjs/datetime2";
 import { LogLevel } from './LogMessage';
@@ -23,6 +23,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   handleSeverityChange
 }) => {
   const [selectedDateRange, setSelectedDateRange] = useState<{ start: Date | null, end: Date | null }>({ ...dateRange });
+
+  // Keep selectedDateRange in sync with dateRange prop
+  useEffect(() => { setSelectedDateRange({ ...dateRange }); }, [dateRange]);
 
   return (
     <div style={{ background: '#fff', borderRight: '1px solid #eee', padding: 20, boxSizing: 'border-box', minHeight: '100vh' }}>

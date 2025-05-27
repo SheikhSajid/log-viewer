@@ -60,6 +60,22 @@ const App: React.FC = () => {
     setFilteredLogs(currentLogs);
   }, [allLogs, searchTerm, dateRange]);
 
+  // Set dateRange to oldest/newest log timestamps after logs are loaded
+  useEffect(() => {
+    if (allLogs.length > 0) {
+      const validLogs = allLogs.filter(l => l.valid && l.parsedLog && l.parsedLog.meta.time_logged);
+      if (validLogs.length > 0) {
+        const times = validLogs.map(l => l.parsedLog.meta.time_logged.getTime());
+        const minTime = Math.min(...times);
+        const maxTime = Math.max(...times);
+        setDateRange(() => ({
+          start: new Date(minTime),
+          end: new Date(maxTime)
+        }));
+      }
+    }
+  }, [allLogs]);
+
   const handleLogClick = (log: ValidatedLogLine) => {
     setSelectedLog(log);
     setDrawerOpen(true);
