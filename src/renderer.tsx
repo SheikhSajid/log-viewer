@@ -38,11 +38,27 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let currentLogs = allLogs;
-    if (searchTerm.trim()) {
-      currentLogs = allLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Date filtering
+    if (dateRange.start || dateRange.end) {
+      currentLogs = currentLogs.filter(log => {
+        if (!log.valid || !log.parsedLog) return false;
+        
+        const logDate = log.parsedLog.meta.time_logged;
+        if (dateRange.start && logDate < dateRange.start) return false;
+        if (dateRange.end && logDate > dateRange.end) return false;
+
+        return true;
+      });
     }
+
+    // Search filtering
+    if (searchTerm.trim()) {
+      currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
     setFilteredLogs(currentLogs);
-  }, [allLogs, searchTerm]);
+  }, [allLogs, searchTerm, dateRange]);
 
   const handleLogClick = (log: ValidatedLogLine) => {
     setSelectedLog(log);
