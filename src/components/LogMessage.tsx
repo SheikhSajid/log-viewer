@@ -19,6 +19,24 @@ export const logSchema = z.object({
   payload: z.unknown().optional(),
 });
 
+// Logger message schema (for syslog Logger entries)
+export const loggerJsonSchema = z.object({
+  meta: z.object({
+    box_guid: z.string().optional(),
+    org_id: z.string().optional(),
+    mac_address: z.string().optional(),
+    name: z.string(),
+  }),
+  level: z.enum(['debug', 'info', 'warn', 'error']),
+  message: z.string(),
+  params: z.unknown().optional()
+});
+
+export const ReceptionistParamsSchema = z.object({
+  type: z.string(),
+  // payload: z.object({}).optional()
+});
+
 // syslog schema
 export const syslogSchema = z.object({
   level: z.enum(['D', 'I', 'W', 'E', 'V']),
@@ -64,11 +82,11 @@ const levelProps: Record<LogLevel, { color: string; label: string }> = {
   warn: { color: '#ff9800', label: 'Warning' },
 
   // syslog
-  D: { color: '#9e9e9e', label: 'Debug' },
+  V: { color: '#9e9e9e', label: 'Verbose' },
   I: { color: '#2196f3', label: 'Info' },
-  W: { color: '#ff9800', label: 'Warning' },
   E: { color: '#f44336', label: 'Error' },
-  V: { color: '#9e9e9e', label: 'Verbose' }
+  W: { color: '#ff9800', label: 'Warning' },
+  D: { color: '#9e9e9e', label: 'Debug' }
 };
 
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {

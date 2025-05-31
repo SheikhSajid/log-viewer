@@ -1,5 +1,5 @@
 import React from 'react';
-import { logSchema, syslogSchema, ValidatedLogLine } from './LogMessage';
+import { logSchema, syslogSchema, loggerJsonSchema, ValidatedLogLine, ReceptionistParamsSchema } from './LogMessage';
 import { Icon } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
 
@@ -60,12 +60,36 @@ function validateSyslogLogLines(lines: string[]): any[] {
         level,
         message,
         meta: {
-          name: tag,
+          name: tag.trim(),
           tid,
           pid,
           time_logged: timestamp
         }
       };
+
+      if (tag.trim() === 'Logger') {
+        try {
+          const jsonMessage = JSON.parse(message);
+          const loggerValidation = loggerJsonSchema.safeParse(jsonMessage);
+          if (loggerValidation.success) {
+            syslogLine.meta.name = loggerValidation.data.meta.name;
+            syslogLine.message = loggerValidation.data.message;
+
+            if (syslogLine.meta.name === 'ReceptionistInternal') {
+              const receptionistParamsValidation = ReceptionistParamsSchema.safeParse(loggerValidation.data.params);
+              if (receptionistParamsValidation.success) {
+                syslogLine.message += ' ' + receptionistParamsValidation.data.type;
+              } else {
+                console.error('Receptionist params validation error:', receptionistParamsValidation.error.flatten());
+              }
+            }
+          }
+        } catch (err) {
+          // If JSON parsing fails, just keep the original message
+          console.warn('Failed to parse Logger JSON:', err);
+        }
+      }
+
       const validationResult = syslogSchema.safeParse(syslogLine);
 
       if (validationResult.success) {
