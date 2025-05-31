@@ -1,8 +1,9 @@
 import React from 'react';
 import { z } from 'zod';
 import { Text, Tag, Tooltip } from "@blueprintjs/core";
+import { logSource } from './Sidebar';
 
-// Zod schema for log validation
+// box log schema
 export const logSchema = z.object({
   level: z.enum(['verbose', 'info', 'error', 'warn']),
   message: z.string(),
@@ -18,8 +19,21 @@ export const logSchema = z.object({
   payload: z.unknown().optional(),
 });
 
+// syslog schema
+export const syslogSchema = z.object({
+  level: z.enum(['D', 'I', 'W', 'E', 'V']),
+  message: z.string(),
+  meta: z.object({
+    name: z.string(),
+    tid: z.string().transform((str) => parseInt(str, 10)),
+    pid: z.string().transform((str) => parseInt(str, 10)),
+    time_logged: z.string().transform((str) => new Date(str)),
+  }),
+});
+
 type LogEntry = z.infer<typeof logSchema>;
-export type LogLevel = LogEntry['level'];
+type SyslogEntry = z.infer<typeof syslogSchema>;
+export type LogLevel = LogEntry['level'] | SyslogEntry['level'];
 
 export interface ValidatedLogLine {
   valid: boolean;
@@ -27,6 +41,7 @@ export interface ValidatedLogLine {
   parsedLog?: LogEntry;
   error?: string;
   id: string; // Unique ID for React key
+  src: logSource
 }
 
 export function escapeHtml(text: string) {
@@ -42,10 +57,18 @@ export function escapeHtml(text: string) {
 }
 
 const levelProps: Record<LogLevel, { color: string; label: string }> = {
+  // box logs
   verbose: { color: '#9e9e9e', label: 'Verbose' },
   info: { color: '#2196f3', label: 'Info' },
   error: { color: '#f44336', label: 'Error' },
   warn: { color: '#ff9800', label: 'Warning' },
+
+  // syslog
+  D: { color: '#9e9e9e', label: 'Debug' },
+  I: { color: '#2196f3', label: 'Info' },
+  W: { color: '#ff9800', label: 'Warning' },
+  E: { color: '#f44336', label: 'Error' },
+  V: { color: '#9e9e9e', label: 'Verbose' }
 };
 
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
