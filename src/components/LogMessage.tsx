@@ -33,7 +33,7 @@ export const loggerJsonSchema = z.object({
 });
 
 export const ReceptionistParamsSchema = z.object({
-  type: z.string(),
+  type: z.string().optional(),
   // payload: z.object({}).optional()
 });
 
