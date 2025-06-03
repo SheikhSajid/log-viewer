@@ -89,6 +89,74 @@ const levelProps: Record<LogLevel, { color: string; label: string }> = {
   D: { color: '#9e9e9e', label: 'Debug' }
 };
 
+const SOCKET_SERVER_EVENT_TAG = 'Socket Server Event';
+const SOCKET_SERVER_LOG_PREFIXES = [
+  'update sockets connecting',
+  'stream stop',
+  'video stop',
+  'widget stop',
+  'port-check stop',
+  'stop',
+  'stream join',
+  'video start',
+  'widget start',
+  'preview connect',
+  'stream custom',
+  'stream freeze',
+  'stream hibernate',
+  'stream hide',
+  'stream move',
+  'stream smoothness',
+  'webrtc receive message',
+  'timer adjust',
+  'timer hide',
+  'timer pause',
+  'timer position',
+  'timer reset',
+  'timer show',
+  'timer start',
+  'local video pre response',
+  'video custom',
+  'video error_set',
+  'video get_preview_url',
+  'video next',
+  'video pause',
+  'video play',
+  'video previous',
+  'video seek',
+  'video select',
+  'video subtitles',
+  'widget lap',
+  'widget pause',
+  'widget play',
+  'widget reset',
+  'screenshot',
+  'screenshot fullscreen',
+  'set mute',
+  'set volume',
+  'chain established',
+  'chain broken',
+  'announcements video init device',
+  'announcements video setup transport and consumer',
+  'announcements video stop',
+  'first presenter id'
+];
+
+function isSocketServerEvent(logLine: ValidatedLogLine) {
+  // Only for logs from manager
+  if (!logLine.valid || !logLine.parsedLog) return false;
+  const meta = logLine.parsedLog.meta;
+  if (!meta || meta.name !== 'manager') return false;
+  const msg = logLine.parsedLog.message;
+  // Check if message starts with any known event handler log
+  return SOCKET_SERVER_LOG_PREFIXES.some(prefix => msg.startsWith(prefix));
+}
+
+const TAG_COLORS: Record<string, string> = {
+  'Multi Video Player': '#8e44ad',      // purple
+  'Socket Server Event': '#16a085',     // teal
+};
+
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
   if (!logLine.line.trim()) return null;
 
@@ -104,11 +172,15 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
   const log = logLine.parsedLog;
   const level = levelProps[log.level];
 
+  // Tag computation logic
   const tags: string[] = [];
   if (logLine.valid && logLine.parsedLog) {
     const service = logLine.parsedLog.meta.name;
     if (service === 'manager' && logLine.parsedLog.message.startsWith('video event')) {
       tags.push('Multi Video Player');
+    }
+    if (isSocketServerEvent(logLine)) {
+      tags.push(SOCKET_SERVER_EVENT_TAG);
     }
   }
 
@@ -152,7 +224,9 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
                     fontSize: 11,
                     height: 18,
                     lineHeight: '16px',
-                    padding: '0 6px'
+                    padding: '0 6px',
+                    background: TAG_COLORS[tag] || undefined,
+                    color: '#fff'
                   }}
                 >
                   {tag}
