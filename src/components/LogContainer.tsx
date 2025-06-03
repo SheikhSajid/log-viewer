@@ -9,7 +9,7 @@ interface LogContainerProps {
 }
 
 const LogContainer: React.FC<LogContainerProps> = ({ logLines, onLogClick, selectedTimezone }) => {
-  const itemSize = 31; // Adjust based on LogMessage height
+  const itemSize = 31;
   const containerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(400);
 

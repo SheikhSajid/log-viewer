@@ -56,7 +56,7 @@ export type LogLevel = LogEntry['level'] | SyslogEntry['level'];
 export interface ValidatedLogLine {
   valid: boolean;
   line: string;
-  parsedLog?: LogEntry;
+  parsedLog?: LogEntry | SyslogEntry;
   error?: string;
   id: string; // Unique ID for React key
   src: logSource

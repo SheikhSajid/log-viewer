@@ -33,7 +33,7 @@ function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
 }
 
 // Add a new function to validate Syslog lines
-function validateSyslogLogLines(lines: string[]): any[] {
+function validateSyslogLogLines(lines: string[]): ValidatedLogLine[] {
   /**
    * ^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} [+-]\d{4})   // (1) Timestamp: e.g. 2025-03-13 07:30:42.035 +0000
    * \s+(\d+)                                                  // (2) PID: one or more digits, separated by whitespace
