@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup } from "@blueprintjs/core";
+import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup, Button } from "@blueprintjs/core";
 import FileInput from './FileInput';
 import { ValidatedLogLine } from './LogMessage';
 
@@ -13,6 +13,10 @@ interface NavbarBarProps {
   onlyShowMatching: boolean;
   setOnlyShowMatching: (val: boolean) => void;
   matchCount?: number;
+  onPrevMatch?: () => void;
+  onNextMatch?: () => void;
+  showNavButtons?: boolean;
+  matchIndex?: number;
 }
 
 const NavbarBar: React.FC<NavbarBarProps> = ({
@@ -24,12 +28,16 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   onLogsLoaded,
   onlyShowMatching,
   setOnlyShowMatching,
-  matchCount
+  matchCount,
+  onPrevMatch,
+  onNextMatch,
+  showNavButtons,
+  matchIndex
 }) => (
   <Navbar style={{ height: 65 }}>
-    <NavbarGroup align={Alignment.START} style={{ height: 65, width: '100%' }}>
+    <NavbarGroup align={Alignment.LEFT} style={{ width: '100%', alignItems: 'flex-start' }}>
       <NavbarHeading>Log Viewer</NavbarHeading>
-      <div style={{ display: 'flex', flexDirection: 'column', marginRight: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', marginRight: 12, paddingTop: 5 }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <InputGroup
             leftIcon="search"
@@ -43,6 +51,36 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
           {typeof matchCount === 'number' && (
             <span style={{ marginLeft: 8, color: '#aaa', fontSize: '0.95em', minWidth: 60 }}>
               {matchCount} match{matchCount === 1 ? '' : 'es'}
+            </span>
+          )}
+          {showNavButtons && (
+            <span style={{ display: 'flex', alignItems: 'center', marginLeft: 8, gap: 4 }}>
+              <Button
+                icon="chevron-left"
+                minimal
+                small
+                onClick={onPrevMatch}
+                disabled={typeof matchIndex !== 'number' || matchIndex <= 0}
+                data-testid="prevMatchBtn"
+              />
+              <Button
+                icon="chevron-right"
+                minimal
+                small
+                onClick={onNextMatch}
+                disabled={
+                  typeof matchCount !== 'number' ||
+                  typeof matchIndex !== 'number' ||
+                  matchCount === 0 ||
+                  matchIndex >= matchCount - 1
+                }
+                data-testid="nextMatchBtn"
+              />
+              {typeof matchIndex === 'number' && typeof matchCount === 'number' && matchCount > 0 && (
+                <span style={{ fontSize: '0.95em', color: '#888', marginLeft: 2 }}>
+                  {matchIndex + 1}/{matchCount}
+                </span>
+              )}
             </span>
           )}
         </div>

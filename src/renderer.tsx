@@ -33,6 +33,8 @@ const App: React.FC = () => {
   const [onlyShowMatching, setOnlyShowMatching] = useState(true);
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const [matchCount, setMatchCount] = useState(0);
+  const [matchIndex, setMatchIndex] = useState<number>(0);
+  const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
 
   useEffect(() => {
     const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
@@ -57,22 +59,39 @@ const App: React.FC = () => {
 
     // Search filtering
     let matches = 0;
+    let indexes: number[] = [];
     if (searchTerm.trim()) {
-      matches = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase())).length;
+      indexes = currentLogs
+        .map((log, idx) => log.line.toLowerCase().includes(searchTerm.toLowerCase()) ? idx : -1)
+        .filter(idx => idx !== -1);
+      matches = indexes.length;
+      setMatchIndexes(indexes);
+
       if (onlyShowMatching) {
         currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
         setScrollToIndex(null);
+        setMatchIndex(0);
       } else {
         // Find first matching index in filtered logs
-        const idx = currentLogs.findIndex(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+        const idx = indexes[0];
         setScrollToIndex(idx >= 0 ? idx : null);
+        setMatchIndex(0);
       }
     } else {
       setScrollToIndex(null);
+      setMatchIndexes([]);
+      setMatchIndex(0);
     }
     setMatchCount(matches);
     setFilteredLogs(currentLogs);
   }, [allLogs, searchTerm, dateRange, onlyShowMatching]);
+
+  // When matchIndex changes, scroll to the new match (only when not onlyShowMatching)
+  useEffect(() => {
+    if (!onlyShowMatching && matchIndexes.length > 0 && typeof matchIndex === 'number') {
+      setScrollToIndex(matchIndexes[matchIndex] ?? matchIndexes[0]);
+    }
+  }, [matchIndex, matchIndexes, onlyShowMatching]);
 
   // Set dateRange to oldest/newest log timestamps after logs are loaded
   useEffect(() => {
@@ -104,6 +123,20 @@ const App: React.FC = () => {
   const handleSourceChange = (source: logSource) => setLogSources(s => ({ ...s, [source]: !s[source] }));
   const handleSeverityChange = (level: LogLevel) => setSeverity(s => ({ ...s, [level]: !s[level] }));
 
+  const handlePrevMatch = () => {
+    setMatchIndex(idx => {
+      if (!matchIndexes.length) return 0;
+      return idx > 0 ? idx - 1 : 0;
+    });
+  };
+
+  const handleNextMatch = () => {
+    setMatchIndex(idx => {
+      if (!matchIndexes.length) return 0;
+      return idx < matchIndexes.length - 1 ? idx + 1 : idx;
+    });
+  };
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8f9fa' }}>
       <Sidebar
@@ -127,6 +160,10 @@ const App: React.FC = () => {
           onlyShowMatching={onlyShowMatching}
           setOnlyShowMatching={setOnlyShowMatching}
           matchCount={searchTerm.trim() ? matchCount : undefined}
+          onPrevMatch={handlePrevMatch}
+          onNextMatch={handleNextMatch}
+          showNavButtons={!!searchTerm.trim() && !onlyShowMatching && matchCount > 0}
+          matchIndex={matchIndex}
         />
         <LogContainer
           logLines={filteredLogs}
@@ -135,6 +172,8 @@ const App: React.FC = () => {
           scrollToIndex={scrollToIndex}
           searchTerm={searchTerm}
           onlyShowMatching={onlyShowMatching}
+          matchIndex={matchIndex}
+          matchIndexes={matchIndexes}
         />
         <LogDrawer
           isOpen={drawerOpen}
