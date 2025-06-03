@@ -1,19 +1,34 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 import path from 'node:path';
-import started from 'electron-squirrel-startup';
+// import started from 'electron-squirrel-startup';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (started) {
-  app.quit();
-}
+// if (started) {
+//   app.quit();
+// }
 
-const createWindow = () => {
+const createWindow = async () => {
+    // Install React DevTools in development
+  if (!app.isPackaged) {
+    try {
+      const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import('electron-devtools-installer');
+      await installExtension(REACT_DEVELOPER_TOOLS);
+      console.log('React DevTools installed successfully');
+    } catch (error) {
+      console.error('Failed to install React DevTools:', error);
+    }
+  }
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false, // Disable sandbox for React DevTools to work
+      webSecurity: false, // Disable web security for local file access
     },
   });
 
@@ -24,8 +39,11 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  session.defaultSession.getAllExtensions().map(e => {
+  if (e.name === 'React Developer Tools') {
+    session.defaultSession.loadExtension(e.path);
+  }
+});
 };
 
 // This method will be called when Electron has finished
