@@ -157,7 +157,7 @@ const TAG_COLORS: Record<string, string> = {
   'Socket Server Event': '#16a085',     // teal
 };
 
-const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
+const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string; highlight?: boolean }> = ({ logLine, selectedTimezone, highlight }) => {
   if (!logLine.line.trim()) return null;
 
   if (!logLine.valid || !logLine.parsedLog) {
@@ -196,7 +196,7 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
         padding: '0 0',
         minHeight: 32,
         borderBottom: '1px solid #eee',
-        background: '#fff',
+        background: highlight ? 'rgba(255,255,0,0.18)' : '#fff',
         cursor: 'pointer',
       }}>
         {/* Level indicator */}
@@ -234,7 +234,19 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
               ))}
             </span>
           )}
-          <span>{log.message}</span>
+          <span
+            style={
+              highlight
+                ? {
+                    fontWeight: 700,
+                    borderRadius: 3,
+                    padding: '0 2px'
+                  }
+                : undefined
+            }
+          >
+            {log.message}
+          </span>
         </div>
       </div>
     </>

@@ -7,9 +7,18 @@ interface LogContainerProps {
   onLogClick: (log: ValidatedLogLine) => void;
   selectedTimezone: string;
   scrollToIndex?: number | null;
+  searchTerm?: string;
+  onlyShowMatching?: boolean;
 }
 
-const LogContainer: React.FC<LogContainerProps> = ({ logLines, onLogClick, selectedTimezone, scrollToIndex }) => {
+const LogContainer: React.FC<LogContainerProps> = ({
+  logLines,
+  onLogClick,
+  selectedTimezone,
+  scrollToIndex,
+  searchTerm = '',
+  onlyShowMatching = true
+}) => {
   const itemSize = 31;
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<List>(null);
@@ -36,11 +45,31 @@ const LogContainer: React.FC<LogContainerProps> = ({ logLines, onLogClick, selec
     }
   }, [scrollToIndex, logLines.length]);
 
+  const lowerSearch = searchTerm.trim().toLowerCase();
+
   const Row = ({ index, style }: ListChildComponentProps) => {
     const logLine = logLines[index];
+    const isMatch =
+      lowerSearch.length > 0 &&
+      logLine.line.toLowerCase().includes(lowerSearch);
+
+    // Only highlight if onlyShowMatching is false
+    const shouldHighlight = !onlyShowMatching && isMatch;
+
     return (
-      <div style={{ ...style, cursor: 'pointer' }} onClick={() => onLogClick(logLine)}>
-        <LogMessage logLine={logLine} selectedTimezone={selectedTimezone} />
+      <div
+        style={{
+          ...style,
+          cursor: 'pointer',
+          background: shouldHighlight ? 'rgba(255,255,0,0.18)' : undefined
+        }}
+        onClick={() => onLogClick(logLine)}
+      >
+        <LogMessage
+          logLine={logLine}
+          selectedTimezone={selectedTimezone}
+          highlight={shouldHighlight}
+        />
       </div>
     );
   };

@@ -133,6 +133,8 @@ const App: React.FC = () => {
           onLogClick={handleLogClick}
           selectedTimezone={selectedTimezone}
           scrollToIndex={scrollToIndex}
+          searchTerm={searchTerm}
+          onlyShowMatching={onlyShowMatching}
         />
         <LogDrawer
           isOpen={drawerOpen}
