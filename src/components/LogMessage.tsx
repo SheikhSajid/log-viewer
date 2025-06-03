@@ -56,7 +56,7 @@ export type LogLevel = LogEntry['level'] | SyslogEntry['level'];
 export interface ValidatedLogLine {
   valid: boolean;
   line: string;
-  parsedLog?: LogEntry;
+  parsedLog?: LogEntry | SyslogEntry;
   error?: string;
   id: string; // Unique ID for React key
   src: logSource
@@ -89,7 +89,7 @@ const levelProps: Record<LogLevel, { color: string; label: string }> = {
   D: { color: '#9e9e9e', label: 'Debug' }
 };
 
-const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
+const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string; tags?: string[] }> = ({ logLine, selectedTimezone, tags = [] }) => {
   if (!logLine.line.trim()) return null;
 
   if (!logLine.valid || !logLine.parsedLog) {
@@ -129,9 +129,30 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
         <div style={{ color: '#222', whiteSpace: 'pre', fontWeight: 500 }}>{log.meta && log.meta.time_logged ? new Date(log.meta.time_logged).toLocaleString('en-CA', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: selectedTimezone }) + '.' + String(new Date(log.meta.time_logged).getMilliseconds()).padStart(3, '0') : ''}</div>
         {/* Host */}
         <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.meta.name}>{log.meta.name}</div>
-        {/* Message/Content */}
-        <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {log.message}
+        {/* Message/Content + Tags */}
+        <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {tags.length > 0 && (
+            <span style={{ display: 'flex', gap: 4 }}>
+              {tags.map((tag, idx) => (
+                <Tag
+                  key={idx}
+                  minimal
+                  style={{
+                    marginLeft: 0,
+                    marginRight: 4,
+                    opacity: 0.6,
+                    fontSize: 11,
+                    height: 18,
+                    lineHeight: '16px',
+                    padding: '0 6px'
+                  }}
+                >
+                  {tag}
+                </Tag>
+              ))}
+            </span>
+          )}
+          <span>{log.message}</span>
         </div>
       </div>
     </>

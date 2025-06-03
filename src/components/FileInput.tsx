@@ -2,6 +2,7 @@ import React from 'react';
 import { logSchema, syslogSchema, loggerJsonSchema, ValidatedLogLine, ReceptionistParamsSchema } from './LogMessage';
 import { Icon } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
+import { dummyBoxLogs } from '../dummy_data/boxlogs';
 
 interface FileInputProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
@@ -33,7 +34,7 @@ function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
 }
 
 // Add a new function to validate Syslog lines
-function validateSyslogLogLines(lines: string[]): any[] {
+function validateSyslogLogLines(lines: string[]): ValidatedLogLine[] {
   /**
    * ^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} [+-]\d{4})   // (1) Timestamp: e.g. 2025-03-13 07:30:42.035 +0000
    * \s+(\d+)                                                  // (2) PID: one or more digits, separated by whitespace
@@ -111,6 +112,16 @@ function validateSyslogLogLines(lines: string[]): any[] {
 }
 
 const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
+  const sortAndLoadLogs = (logs: ValidatedLogLine[]) => {
+    // Sort logs by time_logged if available
+    logs.sort((a, b) => {
+      const aTime = a.valid && a.parsedLog ? a.parsedLog.meta.time_logged.getTime() : 0;
+      const bTime = b.valid && b.parsedLog ? b.parsedLog.meta.time_logged.getTime() : 0;
+      return aTime - bTime;
+    });
+    onLogsLoaded(logs);
+  };
+  
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -138,32 +149,43 @@ const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
         filesRead++;
         
         if (filesRead === files.length) {
-          // Sort by time_logged if available
-          allLines.sort((a, b) => {
-            const aTime = a.valid && a.parsedLog ? a.parsedLog.meta.time_logged.getTime() : 0;
-            const bTime = b.valid && b.parsedLog ? b.parsedLog.meta.time_logged.getTime() : 0;
-            return aTime - bTime;
-          });
-          onLogsLoaded(allLines);
+          sortAndLoadLogs(allLines);
         }
       };
       reader.readAsText(file);
     }
   };
 
+  // Implement loading dummy logs
+  const handleDummyLogs = () => {
+    const parsedLines = validateBoxLogLines(dummyBoxLogs);
+    sortAndLoadLogs(parsedLines);
+  };
+
   return (
-    <label style={{ display: "flex", alignItems: "center", cursor: "pointer", border: "1px solid #ccc", borderRadius: 3, padding: "6px 12px", background: "#f5f8fa", fontSize: 16, fontFamily: 'inherit', width: "fit-content" }} htmlFor="logFileInput">
-      <Icon icon="document-open" style={{ marginRight: 8 }} />
-      Choose log files...
-      <input
-        id="logFileInput"
-        type="file"
-        multiple
-        onChange={handleFileChange}
-        accept=".log,.txt,.json"
-        style={{ display: "none" }}
-      />
-    </label>
+    <div style={{ display: "flex", gap: 12 }}>
+      <label style={{ display: "flex", alignItems: "center", cursor: "pointer", border: "1px solid #ccc", borderRadius: 3, padding: "6px 12px", background: "#f5f8fa", fontSize: 16, fontFamily: 'inherit', width: "fit-content" }} htmlFor="logFileInput">
+        <Icon icon="document-open" style={{ marginRight: 8 }} />
+        Choose log files...
+        <input
+          id="logFileInput"
+          type="file"
+          multiple
+          onChange={handleFileChange}
+          accept=".log,.txt,.json"
+          style={{ display: "none" }}
+        />
+      </label>
+      
+      <button
+        type="button"
+        style={{ display: "flex", alignItems: "center", border: "1px solid #ccc", borderRadius: 3, padding: "6px 12px", background: "#f5f8fa", fontSize: 16, fontFamily: 'inherit', cursor: "pointer" }}
+        onClick={handleDummyLogs}
+      >
+        <Icon icon="document-open" style={{ marginRight: 8 }} />
+        Load Dummy Logs
+      </button>
+    </div>
   );
 };
 

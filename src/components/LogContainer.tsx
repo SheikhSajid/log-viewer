@@ -9,7 +9,7 @@ interface LogContainerProps {
 }
 
 const LogContainer: React.FC<LogContainerProps> = ({ logLines, onLogClick, selectedTimezone }) => {
-  const itemSize = 31; // Adjust based on LogMessage height
+  const itemSize = 31;
   const containerRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(400);
 
@@ -24,11 +24,24 @@ const LogContainer: React.FC<LogContainerProps> = ({ logLines, onLogClick, selec
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
+  const computeTags = (logLine: ValidatedLogLine): string[] => {
+    const tags: string[] = [];
+    if (logLine.valid && logLine.parsedLog) {
+      const service = logLine.parsedLog.meta.name;
+
+      if (service === 'manager' && logLine.parsedLog.message.startsWith('video event')) {
+        tags.push('Multi Video Player');
+      }
+    }
+    return tags;
+  };
+
   const Row = ({ index, style }: ListChildComponentProps) => {
     const logLine = logLines[index];
+    const tags = computeTags(logLine);
     return (
       <div style={{ ...style, cursor: 'pointer' }} onClick={() => onLogClick(logLine)}>
-        <LogMessage logLine={logLine} selectedTimezone={selectedTimezone} />
+        <LogMessage logLine={logLine} selectedTimezone={selectedTimezone} tags={tags} />
       </div>
     );
   };
