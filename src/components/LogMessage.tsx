@@ -152,6 +152,11 @@ function isSocketServerEvent(logLine: ValidatedLogLine) {
   return SOCKET_SERVER_LOG_PREFIXES.some(prefix => msg.startsWith(prefix));
 }
 
+const TAG_COLORS: Record<string, string> = {
+  'Multi Video Player': '#8e44ad',      // purple
+  'Socket Server Event': '#16a085',     // teal
+};
+
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
   if (!logLine.line.trim()) return null;
 
@@ -219,7 +224,9 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
                     fontSize: 11,
                     height: 18,
                     lineHeight: '16px',
-                    padding: '0 6px'
+                    padding: '0 6px',
+                    background: TAG_COLORS[tag] || undefined,
+                    color: '#fff'
                   }}
                 >
                   {tag}
