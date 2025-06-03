@@ -80,6 +80,55 @@ const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, sel
               </Tooltip>
             </div>
           </div>
+          {/* Pretty print raw line as JSON */}
+          <div style={{ marginBottom: 10 }}>
+            <b>Raw Line (Pretty JSON):</b>
+            <pre
+              style={{
+                background: '#23272e',
+                color: '#eee',
+                padding: 8,
+                borderRadius: 4,
+                marginTop: 4,
+                overflowX: 'auto',
+                overflowY: 'auto',
+                maxHeight: 300
+              }}
+            >
+              <code>
+                {(() => {
+                  function syntaxHighlight(json: string) {
+                    // Escape HTML
+                    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return json.replace(
+                      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                      (match) => {
+                        let cls = 'color:#d19a66;'; // number
+                        if (/^"/.test(match)) {
+                          if (/:$/.test(match)) {
+                            cls = 'color:#61afef;'; // key
+                          } else {
+                            cls = 'color:#98c379;'; // string
+                          }
+                        } else if (/true|false/.test(match)) {
+                          cls = 'color:#e06c75;'; // boolean
+                        } else if (/null/.test(match)) {
+                          cls = 'color:#c678dd;'; // null
+                        }
+                        return `<span style="${cls}">${match}</span>`;
+                      }
+                    );
+                  }
+                  try {
+                    const pretty = JSON.stringify(JSON.parse(selectedLog.line), null, 2);
+                    return <span dangerouslySetInnerHTML={{ __html: syntaxHighlight(pretty) }} />;
+                  } catch {
+                    return "Invalid JSON";
+                  }
+                })()}
+              </code>
+            </pre>
+          </div>
         </Card>
       )}
       {selectedLog && (!selectedLog.valid || !selectedLog.parsedLog) && (
