@@ -89,7 +89,7 @@ const levelProps: Record<LogLevel, { color: string; label: string }> = {
   D: { color: '#9e9e9e', label: 'Debug' }
 };
 
-const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string; tags?: string[] }> = ({ logLine, selectedTimezone, tags = [] }) => {
+const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string }> = ({ logLine, selectedTimezone }) => {
   if (!logLine.line.trim()) return null;
 
   if (!logLine.valid || !logLine.parsedLog) {
@@ -103,6 +103,14 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
 
   const log = logLine.parsedLog;
   const level = levelProps[log.level];
+
+  const tags: string[] = [];
+  if (logLine.valid && logLine.parsedLog) {
+    const service = logLine.parsedLog.meta.name;
+    if (service === 'manager' && logLine.parsedLog.message.startsWith('video event')) {
+      tags.push('Multi Video Player');
+    }
+  }
 
   // Table-like row layout
   return (
