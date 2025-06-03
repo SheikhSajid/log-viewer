@@ -12,6 +12,7 @@ interface NavbarBarProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
   onlyShowMatching: boolean;
   setOnlyShowMatching: (val: boolean) => void;
+  matchCount?: number;
 }
 
 const NavbarBar: React.FC<NavbarBarProps> = ({
@@ -22,21 +23,29 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   timezones,
   onLogsLoaded,
   onlyShowMatching,
-  setOnlyShowMatching
+  setOnlyShowMatching,
+  matchCount
 }) => (
   <Navbar style={{ height: 65 }}>
     <NavbarGroup align={Alignment.START} style={{ height: 65, width: '100%' }}>
       <NavbarHeading>Log Viewer</NavbarHeading>
       <div style={{ display: 'flex', flexDirection: 'column', marginRight: 12 }}>
-        <InputGroup
-          leftIcon="search"
-          placeholder="Search logs..."
-          value={searchTerm}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-          fill={false}
-          id="searchBox"
-          data-testid="searchBox"
-        />
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <InputGroup
+            leftIcon="search"
+            placeholder="Search logs..."
+            value={searchTerm}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+            fill={false}
+            id="searchBox"
+            data-testid="searchBox"
+          />
+          {typeof matchCount === 'number' && (
+            <span style={{ marginLeft: 8, color: '#aaa', fontSize: '0.95em', minWidth: 60 }}>
+              {matchCount} match{matchCount === 1 ? '' : 'es'}
+            </span>
+          )}
+        </div>
         <label style={{ marginTop: 4, display: 'flex', alignItems: 'center', userSelect: 'none' }}>
           <input
             type="checkbox"

@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
   const [onlyShowMatching, setOnlyShowMatching] = useState(true);
   const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
+  const [matchCount, setMatchCount] = useState(0);
 
   useEffect(() => {
     const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
@@ -55,7 +56,9 @@ const App: React.FC = () => {
     }
 
     // Search filtering
+    let matches = 0;
     if (searchTerm.trim()) {
+      matches = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase())).length;
       if (onlyShowMatching) {
         currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
         setScrollToIndex(null);
@@ -67,7 +70,7 @@ const App: React.FC = () => {
     } else {
       setScrollToIndex(null);
     }
-
+    setMatchCount(matches);
     setFilteredLogs(currentLogs);
   }, [allLogs, searchTerm, dateRange, onlyShowMatching]);
 
@@ -123,6 +126,7 @@ const App: React.FC = () => {
           onLogsLoaded={setAllLogs}
           onlyShowMatching={onlyShowMatching}
           setOnlyShowMatching={setOnlyShowMatching}
+          matchCount={searchTerm.trim() ? matchCount : undefined}
         />
         <LogContainer
           logLines={filteredLogs}
