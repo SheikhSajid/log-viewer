@@ -30,6 +30,8 @@ const App: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
   const [logSources, setLogSources] = useState<Record<logSource, boolean>>({ Box: false, Syslog: false, Dmesg: false });
   const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
+  const [onlyShowMatching, setOnlyShowMatching] = useState(true);
+  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
@@ -54,11 +56,20 @@ const App: React.FC = () => {
 
     // Search filtering
     if (searchTerm.trim()) {
-      currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+      if (onlyShowMatching) {
+        currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+        setScrollToIndex(null);
+      } else {
+        // Find first matching index in filtered logs
+        const idx = currentLogs.findIndex(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+        setScrollToIndex(idx >= 0 ? idx : null);
+      }
+    } else {
+      setScrollToIndex(null);
     }
 
     setFilteredLogs(currentLogs);
-  }, [allLogs, searchTerm, dateRange]);
+  }, [allLogs, searchTerm, dateRange, onlyShowMatching]);
 
   // Set dateRange to oldest/newest log timestamps after logs are loaded
   useEffect(() => {
@@ -110,11 +121,14 @@ const App: React.FC = () => {
           setSelectedTimezone={setSelectedTimezone}
           timezones={timezones}
           onLogsLoaded={setAllLogs}
+          onlyShowMatching={onlyShowMatching}
+          setOnlyShowMatching={setOnlyShowMatching}
         />
         <LogContainer
           logLines={filteredLogs}
           onLogClick={handleLogClick}
           selectedTimezone={selectedTimezone}
+          scrollToIndex={scrollToIndex}
         />
         <LogDrawer
           isOpen={drawerOpen}

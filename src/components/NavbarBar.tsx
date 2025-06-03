@@ -10,6 +10,8 @@ interface NavbarBarProps {
   setSelectedTimezone: (tz: string) => void;
   timezones: string[];
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
+  onlyShowMatching: boolean;
+  setOnlyShowMatching: (val: boolean) => void;
 }
 
 const NavbarBar: React.FC<NavbarBarProps> = ({
@@ -18,20 +20,35 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   selectedTimezone,
   setSelectedTimezone,
   timezones,
-  onLogsLoaded
+  onLogsLoaded,
+  onlyShowMatching,
+  setOnlyShowMatching
 }) => (
-  <Navbar>
-    <NavbarGroup align={Alignment.LEFT} style={{ width: '100%' }}>
+  <Navbar style={{ height: 65 }}>
+    <NavbarGroup align={Alignment.START} style={{ height: 65, width: '100%' }}>
       <NavbarHeading>Log Viewer</NavbarHeading>
-      <InputGroup
-        leftIcon="search"
-        placeholder="Search logs..."
-        value={searchTerm}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-        fill={false}
-        id="searchBox"
-        data-testid="searchBox"
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', marginRight: 12 }}>
+        <InputGroup
+          leftIcon="search"
+          placeholder="Search logs..."
+          value={searchTerm}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+          fill={false}
+          id="searchBox"
+          data-testid="searchBox"
+        />
+        <label style={{ marginTop: 4, display: 'flex', alignItems: 'center', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={onlyShowMatching}
+            onChange={e => setOnlyShowMatching(e.target.checked)}
+            style={{ marginRight: 6 }}
+            id="onlyShowMatching"
+            data-testid="onlyShowMatching"
+          />
+          only show logs that match search term
+        </label>
+      </div>
       <div style={{ marginLeft: 20 }}>
         <label htmlFor="timezoneSelect" style={{ color: 'white', marginRight: 8 }}>Timezone:</label>
         <select
