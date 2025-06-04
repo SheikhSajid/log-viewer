@@ -1,5 +1,5 @@
 import React from 'react';
-import { Drawer, Card, H4, Callout, Code, Divider } from "@blueprintjs/core";
+import { Drawer, Card, H4, Callout, Code, Divider, Button, Tooltip, Tabs, Tab } from "@blueprintjs/core";
 import { ValidatedLogLine } from './LogMessage';
 
 interface LogDrawerProps {
@@ -9,60 +9,129 @@ interface LogDrawerProps {
   selectedTimezone: string;
 }
 
-const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, selectedTimezone }) => (
-  <Drawer
-    isOpen={isOpen}
-    onClose={onClose}
-    position="right"
-    size="60vw"
-    title="Log Details"
-  >
-    {selectedLog && selectedLog.valid && selectedLog.parsedLog && (
-      <Card style={{ margin: 0 }}>
-        <H4>Log Details</H4>
-        <Divider />
-        <div style={{ marginBottom: 10 }}>
-          <b>Timestamp:</b> {new Intl.DateTimeFormat('default', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: selectedTimezone }).format(new Date(selectedLog.parsedLog.meta.time_logged))}
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <b>Level:</b> <Callout intent={selectedLog.parsedLog.level === 'error' ? 'danger' : selectedLog.parsedLog.level === 'warn' ? 'warning' : selectedLog.parsedLog.level === 'info' ? 'primary' : 'none'}>{selectedLog.parsedLog.level}</Callout>
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <b>Source:</b> {selectedLog.parsedLog.meta.name}
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <b>Message:</b> <Code style={{ whiteSpace: 'pre-wrap' }}>{selectedLog.parsedLog.message}</Code>
-        </div>
-        <Divider />
-        {/* <div style={{ marginBottom: 10 }}>
-          <b>Stack Trace:</b>
-          {selectedLog.parsedLog.payload && (selectedLog.parsedLog.payload as any).stack ? (
-            <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4 }}>{(selectedLog.parsedLog.payload as any).stack}</pre>
-          ) : (
-            <span style={{ color: '#888' }}>N/A</span>
-          )}
-        </div> */}
-        <Divider />
-        <div style={{ marginBottom: 10 }}>
-          <b>Additional Data:</b>
-          <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4 }}>{JSON.stringify(selectedLog.parsedLog.payload, null, 2)}</pre>
-        </div>
-        <Divider />
-        <div style={{ marginBottom: 10 }}>
-          <b>Meta:</b>
-          <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4 }}>{JSON.stringify(selectedLog.parsedLog.meta, null, 2)}</pre>
-        </div>
-        <Divider />
-        <div style={{ marginBottom: 10 }}>
-          <b>Raw Line:</b>
-          <pre style={{ background: '#1a1a1a', color: '#eee', padding: 8, borderRadius: 4, marginTop: 4, overflowX: 'auto' }}>{selectedLog.line}</pre>
-        </div>
-      </Card>
-    )}
-    {selectedLog && (!selectedLog.valid || !selectedLog.parsedLog) && (
-      <Callout intent="danger">Invalid log format</Callout>
-    )}
-  </Drawer>
-);
+const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, selectedTimezone }) => {
+  // Add state for copy feedback
+  const [copied, setCopied] = React.useState(false);
+
+  // Copy handler
+  const handleCopy = React.useCallback(() => {
+    if (selectedLog) {
+      navigator.clipboard.writeText(selectedLog.line);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    }
+  }, [selectedLog]);
+
+  return (
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      position="right"
+      size="60vw"
+      title="Log Details"
+    >
+      {selectedLog && selectedLog.valid && selectedLog.parsedLog && (
+        <Card style={{ margin: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ marginBottom: 10 }}>
+            <b>Timestamp:</b> {new Intl.DateTimeFormat('default', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: selectedTimezone }).format(new Date(selectedLog.parsedLog.meta.time_logged))}
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <b>Message:</b> <Callout intent={selectedLog.parsedLog.level === 'error' ? 'danger' : selectedLog.parsedLog.level === 'warn' ? 'warning' : selectedLog.parsedLog.level === 'info' ? 'primary' : 'none'}>{selectedLog.parsedLog.message}</Callout>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <b>Source:</b> {selectedLog.parsedLog.meta.name}
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <b>Level:</b> <Code style={{ whiteSpace: 'pre-wrap' }}>{selectedLog.parsedLog.level}</Code>
+          </div>
+          <Divider />
+          {/* Tabs for Meta, Raw Line, Pretty JSON */}
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <Tabs id="log-details-tabs" defaultSelectedTabId="pretty" renderActiveTabPanelOnly>
+                <Tab id="meta" title="Meta" panel={
+                  <div style={{ marginTop: 10 }}>
+                    <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4 }}>{JSON.stringify(selectedLog.parsedLog.meta, null, 2)}</pre>
+                  </div>
+                } />
+                <Tab id="raw" title="Raw Line" panel={
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <pre style={{ background: '#1a1a1a', color: '#eee', padding: 8, borderRadius: 4, overflowX: 'auto', flex: 1 }}>{selectedLog.line}</pre>
+                      <Tooltip content={copied ? "Copied!" : "Copy to clipboard"}>
+                        <Button
+                          icon={copied ? "tick" : "clipboard"}
+                          text={copied ? "Copied!" : "Copy"}
+                          size='small'
+                          style={{ marginTop: 4 }}
+                          onClick={handleCopy}
+                          disabled={copied}
+                        />
+                      </Tooltip>
+                    </div>
+                  </div>
+                } />
+                <Tab id="pretty" title="Raw Line (Pretty JSON)" panel={
+                  <div style={{ marginTop: 10, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                    <pre
+                      style={{
+                        background: '#23272e',
+                        color: '#eee',
+                        padding: 8,
+                        borderRadius: 4,
+                        overflowX: 'auto',
+                        overflowY: 'auto',
+                        flex: 1,
+                        minHeight: 0,
+                        margin: 0,
+                        maxHeight: 'calc(100vh - 300px)' // ensures scrollbars appear if content exceeds viewport
+                      }}
+                    >
+                      <code>
+                        {(() => {
+                          function syntaxHighlight(json: string) {
+                            // Escape HTML
+                            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            return json.replace(
+                              /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+                              (match) => {
+                                let cls = 'color:#d19a66;'; // number
+                                if (/^"/.test(match)) {
+                                  if (/:$/.test(match)) {
+                                    cls = 'color:#61afef;'; // key
+                                  } else {
+                                    cls = 'color:#98c379;'; // string
+                                  }
+                                } else if (/true|false/.test(match)) {
+                                  cls = 'color:#e06c75;'; // boolean
+                                } else if (/null/.test(match)) {
+                                  cls = 'color:#c678dd;'; // null
+                                }
+                                return `<span style="${cls}">${match}</span>`;
+                              }
+                            );
+                          }
+                          try {
+                            const pretty = JSON.stringify(JSON.parse(selectedLog.line), null, 2);
+                            return <span dangerouslySetInnerHTML={{ __html: syntaxHighlight(pretty) }} />;
+                          } catch {
+                            return "Invalid JSON";
+                          }
+                        })()}
+                      </code>
+                    </pre>
+                  </div>
+                } />
+              </Tabs>
+            </div>
+          </div>
+        </Card>
+      )}
+      {selectedLog && (!selectedLog.valid || !selectedLog.parsedLog) && (
+        <Callout intent="danger">Invalid log format</Callout>
+      )}
+    </Drawer>
+  );
+};
 
 export default LogDrawer;
