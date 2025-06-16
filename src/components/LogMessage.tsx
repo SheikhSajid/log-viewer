@@ -5,6 +5,11 @@ import { logSource } from './Sidebar';
 
 // box log schema
 export const logSchema = z.object({
+  error: z.object({
+    code: z.string().optional(),
+    message: z.string(),
+    stack: z.string()
+  }).optional(),
   level: z.enum(['verbose', 'info', 'error', 'warn']),
   message: z.string(),
   meta: z.object({
@@ -235,8 +240,8 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
             </span>
           )}
           <span
-            style={
-              isCurrentMatch
+            style={{
+              ...(isCurrentMatch
                 ? {
                     fontWeight: 700,
                     color: '#d2691e',
@@ -249,10 +254,19 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
                     borderRadius: 3,
                     padding: '0 2px'
                   }
-                : undefined
-            }
+                : {})
+            }}
           >
-            {log.message}
+            {'error' in log && log.error ? (
+              <>
+                <Tag minimal intent="danger" style={{ marginRight: 8, height: 18, lineHeight: '16px' }}>
+                  {log.error.message}
+                </Tag>
+                {log.message}
+              </>
+            ) : (
+              log.message
+            )}
           </span>
         </div>
       </div>
