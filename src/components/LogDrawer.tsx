@@ -1,5 +1,5 @@
 import React from 'react';
-import { Drawer, Card, H4, Callout, Code, Divider, Button, Tooltip, Tabs, Tab } from "@blueprintjs/core";
+import { Drawer, Card, H4, Callout, Code, Divider, Button, Tooltip, Tabs, Tab, Pre } from "@blueprintjs/core";
 import { ValidatedLogLine } from './LogMessage';
 
 interface LogDrawerProps {
@@ -49,6 +49,76 @@ const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, sel
           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <Tabs id="log-details-tabs" defaultSelectedTabId="pretty" renderActiveTabPanelOnly>
+                {selectedLog.parsedLog && 'error' in selectedLog.parsedLog && selectedLog.parsedLog.error?.stack && (
+                  <Tab 
+                    id="stack-trace" 
+                    title="Stack Trace" 
+                    panel={
+                      <div style={{ marginTop: 10 }}>
+                        <Pre style={{
+                          background: '#1a1a1a',
+                          color: '#e0e0e0',
+                          padding: '12px',
+                          borderRadius: '4px',
+                          overflow: 'auto',
+                          maxHeight: 'calc(100vh - 300px)',
+                          whiteSpace: 'pre-wrap',
+                          fontFamily: 'monospace',
+                          fontSize: '13px',
+                          lineHeight: '1.5',
+                        }}>
+                          {selectedLog.parsedLog.error.stack.split('\n').map((line, i) => {
+                            // Style the first line differently (error message)
+                            if (i === 0) {
+                              return (
+                                <div key={i} style={{ color: '#ff6b6b', marginBottom: '8px' }}>
+                                  {line}
+                                </div>
+                              );
+                            }
+                            // Style file paths and line numbers
+                            const match = line.match(/at (.+?):(\d+):(\d+)/);
+                            if (match) {
+                              const [full, path, lineNo, colNo] = match;
+                              const parts = path.split('/');
+                              const fileName = parts[parts.length - 1];
+                              const beforePath = line.substring(0, line.indexOf(path));
+                              return (
+                                <div key={i} style={{ marginLeft: '20px', marginBottom: '4px' }}>
+                                  {beforePath}
+                                  <span style={{ color: '#4ec9b0' }}>{fileName}</span>
+                                  <span style={{ color: '#d4d4d4' }}>:</span>
+                                  <span style={{ color: '#ce9178' }}>{lineNo}</span>
+                                  <span style={{ color: '#d4d4d4' }}>:</span>
+                                  <span style={{ color: '#ce9178' }}>{colNo}</span>
+                                </div>
+                              );
+                            }
+                            // Style function names
+                            const funcMatch = line.match(/at (.+?) \(/);
+                            if (funcMatch) {
+                              const funcName = funcMatch[1];
+                              const parts = line.split(funcName);
+                              return (
+                                <div key={i} style={{ marginLeft: '20px', marginBottom: '4px' }}>
+                                  {parts[0]}
+                                  <span style={{ color: '#dcdcaa' }}>{funcName}</span>
+                                  {parts[1]}
+                                </div>
+                              );
+                            }
+                            // Default styling for other lines
+                            return (
+                              <div key={i} style={{ color: '#d4d4d4', marginLeft: '20px', marginBottom: '4px' }}>
+                                {line}
+                              </div>
+                            );
+                          })}
+                        </Pre>
+                      </div>
+                    } 
+                  />
+                )}
                 <Tab id="meta" title="Meta" panel={
                   <div style={{ marginTop: 10 }}>
                     <pre style={{ background: '#222', color: '#eee', padding: 8, borderRadius: 4 }}>{JSON.stringify(selectedLog.parsedLog.meta, null, 2)}</pre>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { z } from 'zod';
-import { Text, Tag, Tooltip } from "@blueprintjs/core";
+import { Text, Tag, Tooltip, Collapse, Pre, Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
 
 // box log schema
@@ -171,6 +171,7 @@ const DEFAULT_TAG_STYLE = {
 };
 
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string; highlight?: boolean; isCurrentMatch?: boolean }> = ({ logLine, selectedTimezone, highlight, isCurrentMatch }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
   if (!logLine.line.trim()) return null;
 
   if (!logLine.valid || !logLine.parsedLog) {
@@ -179,6 +180,35 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
         <Tag minimal intent="danger" style={{ marginRight: 8, minWidth: 8, height: 16, background: '#e53935', flexShrink: 0 }} />
         <Text style={{ fontWeight: 600, color: '#d9534f', whiteSpace: 'nowrap' }}>[UNSUPPORTED FORMAT]</Text>
         <Text style={{ marginLeft: 8, whiteSpace: 'pre', fontFamily: 'monospace' }}>{escapeHtml(logLine.line)}</Text>
+        {logLine.parsedLog && 'error' in logLine.parsedLog && logLine.parsedLog.error?.stack && (
+          <div style={{ marginTop: 8, marginLeft: 28 }}>
+            <Button
+              small
+              minimal
+              rightIcon={isExpanded ? 'chevron-up' : 'chevron-down'}
+              onClick={() => setIsExpanded(!isExpanded)}
+              style={{ padding: 0, color: '#8a9ba8' }}
+            >
+              {isExpanded ? 'Hide stack trace' : 'Show stack trace'}
+            </Button>
+            <Collapse isOpen={isExpanded}>
+              <Pre style={{
+                background: '#f5f8fa',
+                padding: '8px',
+                borderRadius: '4px',
+                marginTop: '8px',
+                whiteSpace: 'pre-wrap',
+                fontSize: '12px',
+                color: '#5c7080',
+                fontFamily: 'monospace',
+                maxHeight: '300px',
+                overflow: 'auto'
+              }}>
+                {logLine.parsedLog.error.stack}
+              </Pre>
+            </Collapse>
+          </div>
+        )}
       </div>
     );
   }
@@ -276,6 +306,7 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
           )}
           <span
             style={{
+              color: level.color,
               ...(isCurrentMatch
                 ? {
                     fontWeight: 700,
