@@ -17,7 +17,7 @@ export const logSchema = z.object({
     name: z.string(),
     org_id: z.string(),
     pid: z.number(),
-    process: z.literal('box'),
+    process: z.string(),
     time_logged: z.string().transform((str) => new Date(str)),
     version: z.string(),
   }),
@@ -158,8 +158,16 @@ function isSocketServerEvent(logLine: ValidatedLogLine) {
 }
 
 const TAG_COLORS: Record<string, string> = {
-  'Multi Video Player': '#8e44ad',      // purple
-  'Socket Server Event': '#16a085',     // teal
+  'Multi Video Player': '#8e44ad',
+  'Socket Server Event': '#16a085',
+  'v': '#3498db',
+  'process': '#2ecc71'
+};
+
+const DEFAULT_TAG_STYLE = {
+  background: '#95a5a6',
+  color: '#fff',
+  border: 'none'
 };
 
 const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string; highlight?: boolean; isCurrentMatch?: boolean }> = ({ logLine, selectedTimezone, highlight, isCurrentMatch }) => {
@@ -182,6 +190,12 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
   const tags: string[] = [];
   if (logLine.valid && logLine.parsedLog) {
     const service = logLine.parsedLog.meta.name;
+    if ('version' in log.meta) {
+      tags.push(`v${log.meta.version}`);
+    }
+    if ('process' in log.meta && log.meta.process !== 'box') {
+      tags.push(log.meta.process);
+    }
     if (service === 'manager' && logLine.parsedLog.message.startsWith('video event')) {
       tags.push('Multi Video Player');
     }
@@ -226,13 +240,33 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
                   style={{
                     marginLeft: 0,
                     marginRight: 4,
-                    opacity: 0.6,
+                    opacity: 0.8,
                     fontSize: 11,
                     height: 18,
                     lineHeight: '16px',
                     padding: '0 6px',
-                    background: TAG_COLORS[tag] || undefined,
-                    color: '#fff'
+                    ...(TAG_COLORS[tag] 
+                      ? { 
+                          background: TAG_COLORS[tag],
+                          color: '#fff',
+                          ...(tag.startsWith('v') ? { fontSize: '10px', padding: '0 4px' } : {})
+                        }
+                      : {
+                          // For version and process tags
+                          ...(tag.startsWith('v') 
+                            ? { 
+                                background: TAG_COLORS['v'], 
+                                color: '#fff',
+                                fontSize: '10px',
+                                padding: '0 4px'
+                              }
+                            : tag === 'process' 
+                              ? { 
+                                  background: TAG_COLORS['process'], 
+                                  color: '#fff' 
+                                }
+                              : DEFAULT_TAG_STYLE)
+                        })
                   }}
                 >
                   {tag}
