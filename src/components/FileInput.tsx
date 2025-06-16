@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { logSchema, syslogSchema, loggerJsonSchema, ValidatedLogLine, ReceptionistParamsSchema } from './LogMessage';
-import { Icon } from "@blueprintjs/core";
+import { Icon, Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
 import { dummyBoxLogs } from '../dummy_data/boxlogs';
+import FileUploadModal from './FileUploadModal';
 
 interface FileInputProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
@@ -18,7 +19,12 @@ function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
         if (validationResult.success) {
           return { valid: true, line, parsedLog: validationResult.data, id, src: 'Box' as const };
         } else {
-          console.error('Zod validation error:', validationResult.error.flatten());
+          console.error(
+            'Zod validation error:', {
+              error: validationResult.error.flatten(),
+              line
+            }
+          );
           return { valid: false, line, error: 'Schema validation failed', id, src: 'Box' as const };
         }
       } catch (err) {
@@ -112,6 +118,8 @@ function validateSyslogLogLines(lines: string[]): ValidatedLogLine[] {
 }
 
 const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const sortAndLoadLogs = (logs: ValidatedLogLine[]) => {
     // Sort logs by time_logged if available
     logs.sort((a, b) => {
@@ -121,71 +129,89 @@ const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
     });
     onLogsLoaded(logs);
   };
-  
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+
+  const processFiles = (files: File[]) => {
+    if (files.length === 0) return;
+    
     const allLines: ValidatedLogLine[] = [];
     let filesRead = 0;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    
+    files.forEach((file) => {
       let src: logSource | null = null;
       const lowerName = file.name.toLowerCase();
 
-      if (lowerName.startsWith('box')) src = 'Box';
-      else if (lowerName.startsWith('syslog')) src = 'Syslog';
+      if (lowerName.includes('box')) src = 'Box';
+      else if (lowerName.includes('syslog')) src = 'Syslog';
+      
+      if (!src) {
+        filesRead++;
+        if (filesRead === files.length && allLines.length > 0) {
+          sortAndLoadLogs(allLines);
+        }
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
         const lines = text.split(/\r?\n/);
         let parsedLines: ValidatedLogLine[] = [];
+        
         if (src === 'Box') {
           parsedLines = validateBoxLogLines(lines);
         } else if (src === 'Syslog') {
           parsedLines = validateSyslogLogLines(lines);
         }
+        
         allLines.push(...parsedLines);
         filesRead++;
         
-        if (filesRead === files.length) {
+        if (filesRead === files.length && allLines.length > 0) {
+          sortAndLoadLogs(allLines);
+        }
+      };
+      reader.onerror = () => {
+        console.error('Error reading file:', file.name);
+        filesRead++;
+        if (filesRead === files.length && allLines.length > 0) {
           sortAndLoadLogs(allLines);
         }
       };
       reader.readAsText(file);
-    }
+    });
   };
 
-  // Implement loading dummy logs
   const handleDummyLogs = () => {
     const parsedLines = validateBoxLogLines(dummyBoxLogs);
     sortAndLoadLogs(parsedLines);
   };
+  
+  const handleFilesSelected = (files: File[]) => {
+    processFiles(files);
+  };
 
   return (
-    <div style={{ display: "flex", gap: 12 }}>
-      <label style={{ display: "flex", alignItems: "center", cursor: "pointer", border: "1px solid #ccc", borderRadius: 3, padding: "6px 12px", background: "#f5f8fa", fontSize: 16, fontFamily: 'inherit', width: "fit-content" }} htmlFor="logFileInput">
-        <Icon icon="document-open" style={{ marginRight: 8 }} />
-        Choose log files...
-        <input
-          id="logFileInput"
-          type="file"
-          multiple
-          onChange={handleFileChange}
-          accept=".log,.txt,.json"
-          style={{ display: "none" }}
+    <>
+      <div style={{ display: "flex", gap: 12 }}>
+        <Button 
+          icon="document-open" 
+          text="Choose Log Files..."
+          onClick={() => setIsModalOpen(true)}
         />
-      </label>
+        
+        <Button
+          icon="document-open"
+          text="Load Dummy Logs"
+          onClick={handleDummyLogs}
+        />
+      </div>
       
-      <button
-        type="button"
-        style={{ display: "flex", alignItems: "center", border: "1px solid #ccc", borderRadius: 3, padding: "6px 12px", background: "#f5f8fa", fontSize: 16, fontFamily: 'inherit', cursor: "pointer" }}
-        onClick={handleDummyLogs}
-      >
-        <Icon icon="document-open" style={{ marginRight: 8 }} />
-        Load Dummy Logs
-      </button>
-    </div>
+      <FileUploadModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onFilesSelected={handleFilesSelected}
+      />
+    </>
   );
 };
 

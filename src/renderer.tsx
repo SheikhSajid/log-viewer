@@ -47,7 +47,7 @@ const App: React.FC = () => {
     // Date filtering
     if (dateRange.start || dateRange.end) {
       currentLogs = currentLogs.filter(log => {
-        if (!log.valid || !log.parsedLog) return false;
+        if (!log.parsedLog) return false;
         
         const logDate = log.parsedLog.meta.time_logged;
         if (dateRange.start && logDate < dateRange.start) return false;
