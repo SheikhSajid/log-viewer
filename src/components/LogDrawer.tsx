@@ -112,7 +112,8 @@ const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, sel
                             );
                           }
                           try {
-                            const pretty = JSON.stringify(JSON.parse(selectedLog.line), null, 2);
+                            const parsed = JSON.parse(selectedLog.line);
+                            const pretty = JSON.stringify(parsed, null, 2);
                             return <span dangerouslySetInnerHTML={{ __html: syntaxHighlight(pretty) }} />;
                           } catch {
                             return "Invalid JSON";
@@ -128,7 +129,57 @@ const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, sel
         </Card>
       )}
       {selectedLog && (!selectedLog.valid || !selectedLog.parsedLog) && (
-        <Callout intent="danger">Invalid log format</Callout>
+        <Card style={{ margin: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Callout intent="warning" style={{ marginBottom: 10 }}>
+            This log entry doesn't match the expected format
+            {selectedLog.error && (
+              <div style={{ marginTop: 8 }}>
+                <strong>Validation Error:</strong>
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.1)', 
+                  padding: '8px', 
+                  marginTop: '4px', 
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  whiteSpace: 'pre-wrap',
+                  fontSize: '12px'
+                }}>
+                  {selectedLog.error}
+                </div>
+              </div>
+            )}
+          </Callout>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ marginBottom: 10 }}>
+              <strong>Raw content:</strong>
+            </div>
+            <pre style={{
+              background: '#1a1a1a',
+              color: '#eee',
+              padding: 8,
+              borderRadius: 4,
+              overflowX: 'auto',
+              overflowY: 'auto',
+              flex: 1,
+              margin: 0,
+              whiteSpace: 'pre-wrap',
+              maxHeight: 'calc(100vh - 250px)'
+            }}>
+              <code>{selectedLog.line}</code>
+            </pre>
+            <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+              <Tooltip content={copied ? "Copied!" : "Copy to clipboard"}>
+                <Button
+                  icon={copied ? "tick" : "clipboard"}
+                  text={copied ? "Copied!" : "Copy"}
+                  size='small'
+                  onClick={handleCopy}
+                  disabled={copied}
+                />
+              </Tooltip>
+            </div>
+          </div>
+        </Card>
       )}
     </Drawer>
   );

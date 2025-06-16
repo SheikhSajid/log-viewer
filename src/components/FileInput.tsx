@@ -19,13 +19,20 @@ function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
         if (validationResult.success) {
           return { valid: true, line, parsedLog: validationResult.data, id, src: 'Box' as const };
         } else {
+          const errorDetails = JSON.stringify(validationResult.error.flatten(), null, 2);
           console.error(
             'Zod validation error:', {
               error: validationResult.error.flatten(),
               line
             }
           );
-          return { valid: false, line, error: 'Schema validation failed', id, src: 'Box' as const };
+          return { 
+            valid: false, 
+            line, 
+            error: `Schema validation failed:\n${errorDetails}`, 
+            id, 
+            src: 'Box' as const 
+          };
         }
       } catch (err) {
         let errorMessage = 'JSON parsing failed';

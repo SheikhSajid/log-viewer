@@ -167,9 +167,10 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
 
   if (!logLine.valid || !logLine.parsedLog) {
     return (
-      <div style={{ padding: '12px 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', fontFamily: 'monospace', fontSize: 14 }}>
-        <Tag minimal intent="danger" style={{ marginRight: 8, minWidth: 8, height: 16, background: '#e53935' }} />
-        <Text style={{ fontWeight: 600, color: '#d9534f' }}>[UNSUPPORTED FORMAT]</Text> <Text style={{ marginLeft: 8 }}>{escapeHtml(logLine.line)}</Text>
+      <div style={{ padding: '12px 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', fontFamily: 'monospace', fontSize: 14, maxWidth: '100%', overflowX: 'auto' }}>
+        <Tag minimal intent="danger" style={{ marginRight: 8, minWidth: 8, height: 16, background: '#e53935', flexShrink: 0 }} />
+        <Text style={{ fontWeight: 600, color: '#d9534f', whiteSpace: 'nowrap' }}>[UNSUPPORTED FORMAT]</Text>
+        <Text style={{ marginLeft: 8, whiteSpace: 'pre', fontFamily: 'monospace' }}>{escapeHtml(logLine.line)}</Text>
       </div>
     );
   }
