@@ -6,25 +6,35 @@ import './FileUploadModal.css';
 // Helper to get files from a directory (top level only)
 async function getDirectoryFiles(directoryHandle: FileSystemDirectoryEntry): Promise<File[]> {
   const files: File[] = [];
+  const reader = directoryHandle.createReader();
   
-  try {
-    const reader = directoryHandle.createReader();
-    const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+  // Function to read a batch of entries
+  const readEntries = (): Promise<FileSystemEntry[]> => {
+    return new Promise((resolve, reject) => {
       reader.readEntries(
         (entries) => resolve(entries as FileSystemEntry[]),
         (error) => reject(error)
       );
     });
+  };
 
-    // Process each entry
-    for (const entry of entries) {
-      if (entry.isFile) {
-        const file = await getFile(entry as FileSystemFileEntryExtended);
-        if (file) {
-          files.push(file);
-        }
-      }
-    }
+  try {
+    let entries: FileSystemEntry[];
+    
+    // Keep reading entries until no more are returned
+    do {
+      entries = await readEntries();
+      
+      // Process files in the current batch
+      const filePromises = entries
+        .filter(entry => entry.isFile)
+        .map(entry => getFile(entry as FileSystemFileEntryExtended));
+      
+      const batchFiles = (await Promise.all(filePromises)).filter(Boolean) as File[];
+      files.push(...batchFiles);
+      
+    } while (entries.length > 0);
+    
   } catch (error) {
     console.error('Error reading directory:', error);
   }
