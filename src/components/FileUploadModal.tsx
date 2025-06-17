@@ -126,7 +126,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
           if (entry.isFile) {
             // Single file
             const file = item.getAsFile();
-            if (file && file.name.toLowerCase().includes('box')) {
+            if (file && (file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog'))) {
               newFiles.push(file);
             }
           } else if (entry.isDirectory) {
@@ -134,7 +134,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
             try {
               const dirFiles = await getDirectoryFiles(entry as FileSystemDirectoryEntry);
               const filteredFiles = dirFiles.filter(file => 
-                file.name.toLowerCase().includes('box')
+                file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog')
               );
               newFiles.push(...filteredFiles);
             } catch (error) {
@@ -144,7 +144,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
         } else {
           // Fallback for browsers that don't support webkitGetAsEntry
           const file = item.getAsFile();
-          if (file && file.name.toLowerCase().includes('box')) {
+          if (file && (file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog'))) {
             newFiles.push(file);
           }
         }
@@ -161,7 +161,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
       const files = Array.from(e.target.files);
       // Filter files that contain 'box' in their name (case insensitive)
       const filteredFiles = files.filter(file => 
-        file.name.toLowerCase().includes('box')
+        file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog')
       );
       setSelectedFiles(prev => [...new Set([...prev, ...filteredFiles])]);
     }
@@ -200,7 +200,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
               <strong>Drag & drop log files or directories here</strong>
             </p>
             <p style={{ color: '#8A9BA8', marginBottom: '1rem' }}>
-              or click to browse files (only files with 'box' in the name will be accepted)
+              or click to browse files (only files with 'box' or 'syslog' in the name will be accepted)
             </p>
             <p style={{ fontSize: '0.9em', color: '#8A9BA8', marginTop: '0.5rem' }}>
               Directory drop supported in Chrome, Edge, and Opera
