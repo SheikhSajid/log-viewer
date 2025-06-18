@@ -1,6 +1,8 @@
 import React, { useCallback, useState, useRef, ChangeEvent } from 'react';
-import { Dialog, Button, Classes, Intent } from "@blueprintjs/core";
+import { Dialog, Button, Classes, Intent, Divider } from "@blueprintjs/core";
 import { ValidatedLogLine } from './LogMessage';
+import { dummyBoxLogs } from '../dummy_data/boxlogs';
+import { logSchema } from './LogMessage';
 import './FileUploadModal.css';
 
 // Helper to get files from a directory (top level only)
@@ -86,9 +88,43 @@ interface FileUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onFilesSelected: (files: File[]) => void;
+  onLogsLoaded: (logs: ValidatedLogLine[]) => void;
 }
 
-const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFilesSelected }) => {
+function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
+  return lines.map((line, index) => {
+    const id = `boxlog-${Date.now()}-${index}`;
+    if (!line.trim()) return { valid: false, line, id, src: 'Box' as const };
+    try {
+      const parsed = JSON.parse(line);
+      const validationResult = logSchema.safeParse(parsed);
+      if (validationResult.success) {
+        return { valid: true, line, parsedLog: validationResult.data, id, src: 'Box' as const };
+      } else {
+        const errorDetails = JSON.stringify(validationResult.error.flatten(), null, 2);
+        console.error('Zod validation error:', {
+          error: validationResult.error.flatten(),
+          line
+        });
+        return { 
+          valid: false, 
+          line, 
+          error: `Schema validation failed:\n${errorDetails}`, 
+          id, 
+          src: 'Box' as const 
+        };
+      }
+    } catch (err) {
+      let errorMessage = 'JSON parsing failed';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      return { valid: false, line, error: errorMessage, id, src: 'Box' as const };
+    }
+  });
+}
+
+const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFilesSelected, onLogsLoaded }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -242,7 +278,17 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
           </div>
         )}
       </div>
-      <div className={Classes.DIALOG_FOOTER}>
+      <Divider style={{ margin: '15px 0' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 15px 15px' }}>
+        <Button 
+          icon="document-open"
+          text="Load Dummy Logs"
+          onClick={() => {
+            const parsedLines = validateBoxLogLines(dummyBoxLogs);
+            onLogsLoaded(parsedLines);
+            onClose();
+          }}
+        />
         <div className={Classes.DIALOG_FOOTER_ACTIONS}>
           <Button onClick={onClose}>Cancel</Button>
           <Button 

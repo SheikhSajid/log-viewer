@@ -1,8 +1,7 @@
 import React from 'react';
 import { logSchema, syslogSchema, loggerJsonSchema, ValidatedLogLine, ReceptionistParamsSchema } from './LogMessage';
-import { Icon, Button } from "@blueprintjs/core";
+import { Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
-import { dummyBoxLogs } from '../dummy_data/boxlogs';
 import FileUploadModal from './FileUploadModal';
 
 interface FileInputProps {
@@ -193,30 +192,17 @@ const FileInput: React.FC<FileInputProps> = ({
     });
   };
 
-  const handleDummyLogs = () => {
-    const parsedLines = validateBoxLogLines(dummyBoxLogs);
-    sortAndLoadLogs(parsedLines);
-  };
-  
   const handleFilesSelected = (files: File[]) => {
     processFiles(files);
   };
 
   return (
     <>
-      <div style={{ display: "flex", gap: 12 }}>
-        <Button 
-          icon="document-open" 
-          text="Choose Log Files..."
-          onClick={() => onModalOpenChange(true)}
-        />
-        
-        <Button
-          icon="document-open"
-          text="Load Dummy Logs"
-          onClick={handleDummyLogs}
-        />
-      </div>
+      <Button 
+        icon="document-open" 
+        text="Choose Log Files..."
+        onClick={() => onModalOpenChange(true)}
+      />
       
       <FileUploadModal 
         isOpen={isModalOpen}
@@ -227,6 +213,7 @@ const FileInput: React.FC<FileInputProps> = ({
             onModalOpenChange(false);
           }
         }}
+        onLogsLoaded={sortAndLoadLogs}
       />
     </>
   );
