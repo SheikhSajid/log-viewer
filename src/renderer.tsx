@@ -80,6 +80,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 const App: React.FC = () => {
   // State for all logs and filtered logs
   const [allLogs, setAllLogs] = useState<ValidatedLogLine[]>([]);
+  const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false);
   const [filteredLogs, setFilteredLogs] = useState<ValidatedLogLine[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -196,6 +197,13 @@ const App: React.FC = () => {
     }
   }, [matchIndex, matchIndexes, onlyShowMatching]);
 
+  // Auto-open file upload modal when there are no logs
+  useEffect(() => {
+    if (allLogs.length === 0) {
+      setIsFileUploadModalOpen(true);
+    }
+  }, [allLogs.length]);
+
   // Set dateRange to oldest/newest log timestamps after logs are loaded
   // useEffect(() => {
   //   if (allLogs.length > 0) {
@@ -259,7 +267,12 @@ const App: React.FC = () => {
           selectedTimezone={selectedTimezone}
           setSelectedTimezone={setSelectedTimezone}
           timezones={timezones}
-          onLogsLoaded={setAllLogs}
+          onLogsLoaded={(logs) => {
+            setAllLogs(logs);
+            if (logs.length > 0) {
+              setIsFileUploadModalOpen(false);
+            }
+          }}
           onlyShowMatching={onlyShowMatching}
           setOnlyShowMatching={setOnlyShowMatching}
           matchCount={searchTerm.trim() ? matchCount : undefined}
@@ -267,6 +280,8 @@ const App: React.FC = () => {
           onNextMatch={handleNextMatch}
           showNavButtons={!!searchTerm.trim() && !onlyShowMatching && matchCount > 0}
           matchIndex={matchIndex}
+          isFileUploadModalOpen={isFileUploadModalOpen}
+          onFileUploadModalOpenChange={setIsFileUploadModalOpen}
         />
         <LogContainer
           logLines={filteredLogs}

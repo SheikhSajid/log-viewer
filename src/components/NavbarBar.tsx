@@ -17,6 +17,8 @@ interface NavbarBarProps {
   onNextMatch?: () => void;
   showNavButtons?: boolean;
   matchIndex?: number;
+  isFileUploadModalOpen: boolean;
+  onFileUploadModalOpenChange: (isOpen: boolean) => void;
 }
 
 const NavbarBar: React.FC<NavbarBarProps> = ({
@@ -32,7 +34,9 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   onPrevMatch,
   onNextMatch,
   showNavButtons,
-  matchIndex
+  matchIndex,
+  isFileUploadModalOpen,
+  onFileUploadModalOpenChange
 }) => (
   <Navbar style={{ height: 65 }}>
     <NavbarGroup align={Alignment.LEFT} style={{ width: '100%', alignItems: 'flex-start' }}>
@@ -109,7 +113,11 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
       </div>
       <div style={{ flex: 1 }} />
       <div style={{ marginLeft: 20 }}>
-        <FileInput onLogsLoaded={onLogsLoaded} />
+        <FileInput 
+        onLogsLoaded={onLogsLoaded} 
+        isModalOpen={isFileUploadModalOpen}
+        onModalOpenChange={onFileUploadModalOpenChange}
+      />
       </div>
     </NavbarGroup>
   </Navbar>

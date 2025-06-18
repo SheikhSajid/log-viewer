@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { logSchema, syslogSchema, loggerJsonSchema, ValidatedLogLine, ReceptionistParamsSchema } from './LogMessage';
 import { Icon, Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
@@ -7,6 +7,8 @@ import FileUploadModal from './FileUploadModal';
 
 interface FileInputProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
+  isModalOpen: boolean;
+  onModalOpenChange: (isOpen: boolean) => void;
 }
 
 function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
@@ -124,8 +126,11 @@ function validateSyslogLogLines(lines: string[]): ValidatedLogLine[] {
   });
 }
 
-const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const FileInput: React.FC<FileInputProps> = ({ 
+  onLogsLoaded, 
+  isModalOpen, 
+  onModalOpenChange 
+}) => {
 
   const sortAndLoadLogs = (logs: ValidatedLogLine[]) => {
     // Sort logs by time_logged if available
@@ -203,7 +208,7 @@ const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
         <Button 
           icon="document-open" 
           text="Choose Log Files..."
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => onModalOpenChange(true)}
         />
         
         <Button
@@ -215,8 +220,13 @@ const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
       
       <FileUploadModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onFilesSelected={handleFilesSelected}
+        onClose={() => onModalOpenChange(false)}
+        onFilesSelected={(files) => {
+          handleFilesSelected(files);
+          if (files.length > 0) {
+            onModalOpenChange(false);
+          }
+        }}
       />
     </>
   );
