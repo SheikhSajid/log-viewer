@@ -69,7 +69,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 const App: React.FC = () => {
   // State for all logs and filtered logs
   const [allLogs, setAllLogs] = useState<ValidatedLogLine[]>([]);
-  // const [filteredLogs, setFilteredLogs] = useState<ValidatedLogLine[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<ValidatedLogLine[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   
   // State for timezone selection
@@ -77,75 +77,75 @@ const App: React.FC = () => {
   const [timezones, setTimezones] = useState<string[]>([]);
   
   // State for log details drawer
-  // const [selectedLog, setSelectedLog] = useState<ValidatedLogLine | null>(null);
-  // const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<ValidatedLogLine | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // State for sidebar filters
-  // const [dateRange, setDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
-  // const [logSources, setLogSources] = useState<Record<logSource, boolean>>({ Box: false, Syslog: false, Dmesg: false });
-  // const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
+  const [dateRange, setDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
+  const [logSources, setLogSources] = useState<Record<logSource, boolean>>({ Box: false, Syslog: false, Dmesg: false });
+  const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
   const [onlyShowMatching, setOnlyShowMatching] = useState(true);
-  // const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
+  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
   const [matchCount, setMatchCount] = useState(0);
   const [matchIndex, setMatchIndex] = useState<number>(0);
   const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
 
-  // useEffect(() => {
-  //   const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
-  //   setTimezones(availableTimezones);
-  // }, [selectedTimezone]);
+  useEffect(() => {
+    const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
+    setTimezones(availableTimezones);
+  }, [selectedTimezone]);
 
-  // useEffect(() => {
-  //   let currentLogs = allLogs;
+  useEffect(() => {
+    let currentLogs = allLogs;
 
-  //   // Date filtering
-  //   if (dateRange.start || dateRange.end) {
-  //     currentLogs = currentLogs.filter(log => {
-  //       if (!log.parsedLog) return false;
+    // Date filtering
+    if (dateRange.start || dateRange.end) {
+      currentLogs = currentLogs.filter(log => {
+        if (!log.parsedLog) return false;
         
-  //       const logDate = log.parsedLog.meta.time_logged;
-  //       if (dateRange.start && logDate < dateRange.start) return false;
-  //       if (dateRange.end && logDate > dateRange.end) return false;
+        const logDate = log.parsedLog.meta.time_logged;
+        if (dateRange.start && logDate < dateRange.start) return false;
+        if (dateRange.end && logDate > dateRange.end) return false;
 
-  //       return true;
-  //     });
-  //   }
+        return true;
+      });
+    }
 
-  //   // Search filtering
-  //   let matches = 0;
-  //   let indexes: number[] = [];
-  //   if (searchTerm.trim()) {
-  //     indexes = currentLogs
-  //       .map((log, idx) => log.line.toLowerCase().includes(searchTerm.toLowerCase()) ? idx : -1)
-  //       .filter(idx => idx !== -1);
-  //     matches = indexes.length;
-  //     setMatchIndexes(indexes);
+    // Search filtering
+    let matches = 0;
+    let indexes: number[] = [];
+    if (searchTerm.trim()) {
+      indexes = currentLogs
+        .map((log, idx) => log.line.toLowerCase().includes(searchTerm.toLowerCase()) ? idx : -1)
+        .filter(idx => idx !== -1);
+      matches = indexes.length;
+      setMatchIndexes(indexes);
 
-  //     if (onlyShowMatching) {
-  //       currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
-  //       setScrollToIndex(null);
-  //       setMatchIndex(0);
-  //     } else {
-  //       // Find first matching index in filtered logs
-  //       const idx = indexes[0];
-  //       setScrollToIndex(idx >= 0 ? idx : null);
-  //       setMatchIndex(0);
-  //     }
-  //   } else {
-  //     setScrollToIndex(null);
-  //     setMatchIndexes([]);
-  //     setMatchIndex(0);
-  //   }
-  //   setMatchCount(matches);
-  //   setFilteredLogs(currentLogs);
-  // }, [allLogs, searchTerm, dateRange, onlyShowMatching]);
+      if (onlyShowMatching) {
+        currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+        setScrollToIndex(null);
+        setMatchIndex(0);
+      } else {
+        // Find first matching index in filtered logs
+        const idx = indexes[0];
+        setScrollToIndex(idx >= 0 ? idx : null);
+        setMatchIndex(0);
+      }
+    } else {
+      setScrollToIndex(null);
+      setMatchIndexes([]);
+      setMatchIndex(0);
+    }
+    setMatchCount(matches);
+    setFilteredLogs(currentLogs);
+  }, [allLogs, searchTerm, dateRange, onlyShowMatching]);
 
   // When matchIndex changes, scroll to the new match (only when not onlyShowMatching)
-  // useEffect(() => {
-  //   if (!onlyShowMatching && matchIndexes.length > 0 && typeof matchIndex === 'number') {
-  //     setScrollToIndex(matchIndexes[matchIndex] ?? matchIndexes[0]);
-  //   }
-  // }, [matchIndex, matchIndexes, onlyShowMatching]);
+  useEffect(() => {
+    if (!onlyShowMatching && matchIndexes.length > 0 && typeof matchIndex === 'number') {
+      setScrollToIndex(matchIndexes[matchIndex] ?? matchIndexes[0]);
+    }
+  }, [matchIndex, matchIndexes, onlyShowMatching]);
 
   // Set dateRange to oldest/newest log timestamps after logs are loaded
   // useEffect(() => {
@@ -163,19 +163,19 @@ const App: React.FC = () => {
   //   }
   // }, [allLogs]);
 
-  // const handleLogClick = (log: ValidatedLogLine) => {
-  //   setSelectedLog(log);
-  //   setDrawerOpen(true);
-  // };
+  const handleLogClick = (log: ValidatedLogLine) => {
+    setSelectedLog(log);
+    setDrawerOpen(true);
+  };
 
-  // const handleDrawerClose = () => {
-  //   setDrawerOpen(false);
-  //   setSelectedLog(null);
-  // };
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
+    setSelectedLog(null);
+  };
 
   // Sidebar filter handlers
-  // const handleSourceChange = (source: logSource) => setLogSources(s => ({ ...s, [source]: !s[source] }));
-  // const handleSeverityChange = (level: LogLevel) => setSeverity(s => ({ ...s, [level]: !s[level] }));
+  const handleSourceChange = (source: logSource) => setLogSources(s => ({ ...s, [source]: !s[source] }));
+  const handleSeverityChange = (level: LogLevel) => setSeverity(s => ({ ...s, [level]: !s[level] }));
 
   const handlePrevMatch = () => {
     setMatchIndex(idx => {
@@ -193,14 +193,14 @@ const App: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#f8f9fa' }}>
-      {/* <Sidebar
+      <Sidebar
         dateRange={dateRange}
         setDateRange={setDateRange}
         logSources={logSources}
         handleSourceChange={handleSourceChange}
         severity={severity}
         handleSeverityChange={handleSeverityChange}
-      /> */}
+      />
 
       {/* Main content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -219,7 +219,7 @@ const App: React.FC = () => {
           showNavButtons={!!searchTerm.trim() && !onlyShowMatching && matchCount > 0}
           matchIndex={matchIndex}
         />
-        {/* <LogContainer
+        <LogContainer
           logLines={filteredLogs}
           onLogClick={handleLogClick}
           selectedTimezone={selectedTimezone}
@@ -234,9 +234,7 @@ const App: React.FC = () => {
           onClose={handleDrawerClose}
           selectedLog={selectedLog}
           selectedTimezone={selectedTimezone}
-        /> */}
-
-        <h1>{allLogs.length}</h1>
+        />
       </div>
     </div>
   );
