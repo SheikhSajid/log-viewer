@@ -109,6 +109,19 @@ const App: React.FC = () => {
   useEffect(() => {
     let currentLogs = allLogs;
 
+    /* 
+     * Log source filtering
+     * 
+     * TODO: Fix types for Object.entries
+     */
+    const selectedSources = Object.entries(logSources)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([source]) => source as logSource);
+
+    if (selectedSources.length > 0) {
+      currentLogs = currentLogs.filter(log => selectedSources.includes(log.src));
+    }
+
     // Date filtering
     if (dateRange.start || dateRange.end) {
       currentLogs = currentLogs.filter(log => {
@@ -174,7 +187,7 @@ const App: React.FC = () => {
     }
     setMatchCount(matches);
     setFilteredLogs(currentLogs);
-  }, [allLogs, searchTerm, severity, dateRange, onlyShowMatching]);
+  }, [allLogs, logSources, searchTerm, severity, dateRange, onlyShowMatching]);
 
   // When matchIndex changes, scroll to the new match (only when not onlyShowMatching)
   useEffect(() => {
