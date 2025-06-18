@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { LogLevel, ValidatedLogLine } from './components/LogMessage';
+import { BoxLogEntry, levelProps, LogLevel, SyslogEntry, ValidatedLogLine } from './components/LogMessage';
 import Sidebar, { logSource } from './components/Sidebar';
 import NavbarBar from './components/NavbarBar';
 import LogDrawer from './components/LogDrawer';
@@ -11,6 +11,17 @@ import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 import "@blueprintjs/datetime2/lib/css/blueprint-datetime2.css";
+
+const uiLabelToLogLevel: Record<
+  (typeof levelProps)[LogLevel]['label'],
+  [BoxLogEntry['level'] | null, SyslogEntry['level']]
+> = {
+  Verbose: ['verbose', 'V'],
+  Info: ['info', 'I'],
+  Error: ['error', 'E'],
+  Warning: ['warn', 'W'],
+  Debug: [null, 'D'] // syslog only
+};
 
 // Error Boundary Component
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -111,6 +122,31 @@ const App: React.FC = () => {
       });
     }
 
+    /* 
+     * Severity level filtering
+     * 
+     * TODO: Fix types
+     */
+    const selectedSeverityLabels = Object.entries(severity)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([level]) => levelProps[level as LogLevel].label);
+
+    if (selectedSeverityLabels.length > 0) {
+      const selectedLogLevels = new Set<LogLevel>();
+      selectedSeverityLabels.forEach(label => {
+        const levels = uiLabelToLogLevel[label] || [];
+
+        // ! FIXME: level is `never` for some reason
+        levels.forEach(level => level !== null && selectedLogLevels.add(level));
+      });
+
+      if (selectedLogLevels.size > 0) {
+        currentLogs = currentLogs.filter(log => {
+          return log.parsedLog && selectedLogLevels.has(log.parsedLog.level);
+        });
+      }
+    }
+
     // Search filtering
     let matches = 0;
     let indexes: number[] = [];
@@ -138,7 +174,7 @@ const App: React.FC = () => {
     }
     setMatchCount(matches);
     setFilteredLogs(currentLogs);
-  }, [allLogs, searchTerm, dateRange, onlyShowMatching]);
+  }, [allLogs, searchTerm, severity, dateRange, onlyShowMatching]);
 
   // When matchIndex changes, scroll to the new match (only when not onlyShowMatching)
   useEffect(() => {

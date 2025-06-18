@@ -79,14 +79,15 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div style={{ fontWeight: 500, marginBottom: 6 }}>Log Source</div>
         <Checkbox checked={logSources.Box} label="Box" onChange={() => handleSourceChange('Box')} />
         <Checkbox checked={logSources.Syslog} label="Syslog" onChange={() => handleSourceChange('Syslog')} />
-        <Checkbox checked={logSources.Dmesg} label="Dmesg" onChange={() => handleSourceChange('Dmesg')} />
+        <Checkbox checked={logSources.Dmesg} disabled label="Dmesg" onChange={() => handleSourceChange('Dmesg')} />
       </div>
       <div>
         <div style={{ fontWeight: 500, marginBottom: 6 }}>Severity Level</div>
         <Checkbox checked={severity.error} label="Error" onChange={() => handleSeverityChange('error')} />
         <Checkbox checked={severity.warn} label="Warning" onChange={() => handleSeverityChange('warn')} />
         <Checkbox checked={severity.info} label="Info" onChange={() => handleSeverityChange('info')} />
-        <Checkbox checked={severity.verbose} label="Debug" onChange={() => handleSeverityChange('verbose')} />
+        <Checkbox checked={severity.verbose} label="Verbose" onChange={() => handleSeverityChange('verbose')} />
+        <Checkbox checked={severity.D} label="Debug (Syslog only)" onChange={() => handleSeverityChange('D')} />
       </div>
     </div>
   );
