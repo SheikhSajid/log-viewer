@@ -148,10 +148,9 @@ const App: React.FC = () => {
     if (selectedSeverityLabels.length > 0) {
       const selectedLogLevels = new Set<LogLevel>();
       selectedSeverityLabels.forEach(label => {
-        const levels = uiLabelToLogLevel[label] || [];
+        const levels = uiLabelToLogLevel[label];
 
-        // ! FIXME: level is `never` for some reason
-        levels.forEach(level => level !== null && selectedLogLevels.add(level));
+        levels.forEach(level => selectedLogLevels.add(level));
       });
 
       if (selectedLogLevels.size > 0) {
