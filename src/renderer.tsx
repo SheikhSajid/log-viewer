@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { BoxLogEntry, levelProps, LogLevel, SyslogEntry, ValidatedLogLine } from './components/LogMessage';
+import { levelProps, LogLevel, ValidatedLogLine } from './components/LogMessage';
 import Sidebar, { logSource } from './components/Sidebar';
 import NavbarBar from './components/NavbarBar';
 import LogDrawer from './components/LogDrawer';
@@ -14,13 +14,13 @@ import "@blueprintjs/datetime2/lib/css/blueprint-datetime2.css";
 
 const uiLabelToLogLevel: Record<
   (typeof levelProps)[LogLevel]['label'],
-  [BoxLogEntry['level'] | null, SyslogEntry['level']]
+  LogLevel[]
 > = {
   Verbose: ['verbose', 'V'],
   Info: ['info', 'I'],
   Error: ['error', 'E'],
   Warning: ['warn', 'W'],
-  Debug: [null, 'D'] // syslog only
+  Debug: ['D'] // syslog only
 };
 
 // Error Boundary Component
@@ -82,7 +82,14 @@ const App: React.FC = () => {
   const [allLogs, setAllLogs] = useState<ValidatedLogLine[]>([]);
   const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false);
   const [filteredLogs, setFilteredLogs] = useState<ValidatedLogLine[]>([]);
+
+  // State for search
   const [searchTerm, setSearchTerm] = useState('');
+  const [onlyShowMatching, setOnlyShowMatching] = useState(true);
+  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
+  const [matchCount, setMatchCount] = useState(0);
+  const [matchIndex, setMatchIndex] = useState<number>(0);
+  const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
   
   // State for timezone selection
   const [selectedTimezone, setSelectedTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -96,11 +103,6 @@ const App: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
   const [logSources, setLogSources] = useState<Record<logSource, boolean>>({ Box: false, Syslog: false, Dmesg: false });
   const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
-  const [onlyShowMatching, setOnlyShowMatching] = useState(true);
-  const [scrollToIndex, setScrollToIndex] = useState<number | null>(null);
-  const [matchCount, setMatchCount] = useState(0);
-  const [matchIndex, setMatchIndex] = useState<number>(0);
-  const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
 
   useEffect(() => {
     const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
