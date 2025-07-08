@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { logSchema, syslogSchema, loggerJsonSchema, ValidatedLogLine, ReceptionistParamsSchema } from './LogMessage';
-import { Icon, Button } from "@blueprintjs/core";
+import { Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
-import { dummyBoxLogs } from '../dummy_data/boxlogs';
 import FileUploadModal from './FileUploadModal';
 
 interface FileInputProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
+  isModalOpen: boolean;
+  onModalOpenChange: (isOpen: boolean) => void;
 }
 
 function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
@@ -124,8 +125,11 @@ function validateSyslogLogLines(lines: string[]): ValidatedLogLine[] {
   });
 }
 
-const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const FileInput: React.FC<FileInputProps> = ({ 
+  onLogsLoaded, 
+  isModalOpen, 
+  onModalOpenChange 
+}) => {
 
   const sortAndLoadLogs = (logs: ValidatedLogLine[]) => {
     // Sort logs by time_logged if available
@@ -188,35 +192,28 @@ const FileInput: React.FC<FileInputProps> = ({ onLogsLoaded }) => {
     });
   };
 
-  const handleDummyLogs = () => {
-    const parsedLines = validateBoxLogLines(dummyBoxLogs);
-    sortAndLoadLogs(parsedLines);
-  };
-  
   const handleFilesSelected = (files: File[]) => {
     processFiles(files);
   };
 
   return (
     <>
-      <div style={{ display: "flex", gap: 12 }}>
-        <Button 
-          icon="document-open" 
-          text="Choose Log Files..."
-          onClick={() => setIsModalOpen(true)}
-        />
-        
-        <Button
-          icon="document-open"
-          text="Load Dummy Logs"
-          onClick={handleDummyLogs}
-        />
-      </div>
+      <Button 
+        icon="document-open" 
+        text="Choose Log Files..."
+        onClick={() => onModalOpenChange(true)}
+      />
       
       <FileUploadModal 
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onFilesSelected={handleFilesSelected}
+        onClose={() => onModalOpenChange(false)}
+        onFilesSelected={(files) => {
+          handleFilesSelected(files);
+          if (files.length > 0) {
+            onModalOpenChange(false);
+          }
+        }}
+        onLogsLoaded={sortAndLoadLogs}
       />
     </>
   );

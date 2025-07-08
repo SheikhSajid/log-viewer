@@ -1,6 +1,8 @@
 import React, { useCallback, useState, useRef, ChangeEvent } from 'react';
-import { Dialog, Button, Classes, Intent } from "@blueprintjs/core";
+import { Dialog, Button, Classes, Intent, Divider } from "@blueprintjs/core";
 import { ValidatedLogLine } from './LogMessage';
+import { dummyBoxLogs } from '../dummy_data/boxlogs';
+import { logSchema } from './LogMessage';
 import './FileUploadModal.css';
 
 // Helper to get files from a directory (top level only)
@@ -86,9 +88,43 @@ interface FileUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onFilesSelected: (files: File[]) => void;
+  onLogsLoaded: (logs: ValidatedLogLine[]) => void;
 }
 
-const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFilesSelected }) => {
+function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
+  return lines.map((line, index) => {
+    const id = `boxlog-${Date.now()}-${index}`;
+    if (!line.trim()) return { valid: false, line, id, src: 'Box' as const };
+    try {
+      const parsed = JSON.parse(line);
+      const validationResult = logSchema.safeParse(parsed);
+      if (validationResult.success) {
+        return { valid: true, line, parsedLog: validationResult.data, id, src: 'Box' as const };
+      } else {
+        const errorDetails = JSON.stringify(validationResult.error.flatten(), null, 2);
+        console.error('Zod validation error:', {
+          error: validationResult.error.flatten(),
+          line
+        });
+        return { 
+          valid: false, 
+          line, 
+          error: `Schema validation failed:\n${errorDetails}`, 
+          id, 
+          src: 'Box' as const 
+        };
+      }
+    } catch (err) {
+      let errorMessage = 'JSON parsing failed';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      return { valid: false, line, error: errorMessage, id, src: 'Box' as const };
+    }
+  });
+}
+
+const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFilesSelected, onLogsLoaded }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,7 +162,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
           if (entry.isFile) {
             // Single file
             const file = item.getAsFile();
-            if (file && file.name.toLowerCase().includes('box')) {
+            if (file && (file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog'))) {
               newFiles.push(file);
             }
           } else if (entry.isDirectory) {
@@ -134,7 +170,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
             try {
               const dirFiles = await getDirectoryFiles(entry as FileSystemDirectoryEntry);
               const filteredFiles = dirFiles.filter(file => 
-                file.name.toLowerCase().includes('box')
+                file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog')
               );
               newFiles.push(...filteredFiles);
             } catch (error) {
@@ -144,7 +180,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
         } else {
           // Fallback for browsers that don't support webkitGetAsEntry
           const file = item.getAsFile();
-          if (file && file.name.toLowerCase().includes('box')) {
+          if (file && (file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog'))) {
             newFiles.push(file);
           }
         }
@@ -161,7 +197,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
       const files = Array.from(e.target.files);
       // Filter files that contain 'box' in their name (case insensitive)
       const filteredFiles = files.filter(file => 
-        file.name.toLowerCase().includes('box')
+        file.name.toLowerCase().includes('box') || file.name.toLowerCase().includes('syslog')
       );
       setSelectedFiles(prev => [...new Set([...prev, ...filteredFiles])]);
     }
@@ -200,7 +236,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
               <strong>Drag & drop log files or directories here</strong>
             </p>
             <p style={{ color: '#8A9BA8', marginBottom: '1rem' }}>
-              or click to browse files (only files with 'box' in the name will be accepted)
+              or click to browse files (only files with 'box' or 'syslog' in the name will be accepted)
             </p>
             <p style={{ fontSize: '0.9em', color: '#8A9BA8', marginTop: '0.5rem' }}>
               Directory drop supported in Chrome, Edge, and Opera
@@ -242,7 +278,17 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
           </div>
         )}
       </div>
-      <div className={Classes.DIALOG_FOOTER}>
+      <Divider style={{ margin: '15px 0' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 15px 15px' }}>
+        <Button 
+          icon="document-open"
+          text="Load Dummy Logs"
+          onClick={() => {
+            const parsedLines = validateBoxLogLines(dummyBoxLogs);
+            onLogsLoaded(parsedLines);
+            onClose();
+          }}
+        />
         <div className={Classes.DIALOG_FOOTER_ACTIONS}>
           <Button onClick={onClose}>Cancel</Button>
           <Button 

@@ -54,14 +54,14 @@ export const syslogSchema = z.object({
   }),
 });
 
-type LogEntry = z.infer<typeof logSchema>;
-type SyslogEntry = z.infer<typeof syslogSchema>;
-export type LogLevel = LogEntry['level'] | SyslogEntry['level'];
+export type BoxLogEntry = z.infer<typeof logSchema>;
+export type SyslogEntry = z.infer<typeof syslogSchema>;
+export type LogLevel = BoxLogEntry['level'] | SyslogEntry['level'];
 
 export interface ValidatedLogLine {
   valid: boolean;
   line: string;
-  parsedLog?: LogEntry | SyslogEntry;
+  parsedLog?: BoxLogEntry | SyslogEntry;
   error?: string;
   id: string; // Unique ID for React key
   src: logSource
@@ -79,7 +79,7 @@ export function escapeHtml(text: string) {
   });
 }
 
-const levelProps: Record<LogLevel, { color: string; label: string }> = {
+export const levelProps: Record<LogLevel, { color: string; label: 'Verbose' | 'Info' | 'Error' | 'Warning' | 'Debug' }> = {
   // box logs
   verbose: { color: '#9e9e9e', label: 'Verbose' },
   info: { color: '#2196f3', label: 'Info' },
