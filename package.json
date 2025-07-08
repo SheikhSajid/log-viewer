@@ -1,5 +1,6 @@
 {
   "name": "log-viewer",
+  "homepage": "https://sheikhsajid.github.io/log-viewer/",
   "productName": "log-viewer",
   "version": "1.0.0",
   "description": "My Electron application description",
@@ -12,7 +13,11 @@
     "lint": "eslint --ext .ts,.tsx .",
     "browser:dev": "vite --config vite.browser.config.ts",
     "browser:build": "vite build --config vite.browser.config.ts",
-    "browser:preview": "vite preview --config vite.browser.config.ts"
+    "browser:preview": "vite preview --config vite.browser.config.ts",
+    "deploy": "gh-pages -d dist",
+    "predeploy": "npm run browser:build",
+    "ghpages:build": "set GITHUB_PAGES=1 && vite build --config vite.browser.config.ts",
+    "ghpages:deploy": "npm run ghpages:build && npm run deploy"
   },
   "keywords": [],
   "author": {
@@ -40,6 +45,7 @@
     "electron-devtools-installer": "^4.0.0",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.31.0",
+    "gh-pages": "^6.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vite": "^5.4.19"
