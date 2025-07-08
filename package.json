@@ -6,18 +6,14 @@
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
   "scripts": {
-    "start": "electron-forge start",
+    "electron": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "browser:dev": "vite --config vite.browser.config.ts",
-    "browser:build": "vite build --config vite.browser.config.ts",
-    "browser:preview": "vite preview --config vite.browser.config.ts",
+    "start": "vite --config vite.browser.config.ts",
     "deploy": "gh-pages -d dist",
-    "predeploy": "npm run browser:build",
-    "ghpages:build": "set GITHUB_PAGES=1 && vite build --config vite.browser.config.ts",
-    "ghpages:deploy": "npm run ghpages:build && npm run deploy"
+    "predeploy": "vite build --config vite.browser.config.ts"
   },
   "keywords": [],
   "author": {
