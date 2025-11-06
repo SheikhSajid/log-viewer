@@ -165,15 +165,25 @@ const App: React.FC = () => {
     // Search filtering
     let matches = 0;
     let indexes: number[] = [];
-    if (searchTerm.trim()) {
+    const searchTokens = searchTerm
+      .split(/[,\s]+/)
+      .map(token => token.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (searchTokens.length > 0) {
+      const matchesLine = (line: string) => {
+        const lowerLine = line.toLowerCase();
+        return searchTokens.some(token => lowerLine.includes(token));
+      };
+
       indexes = currentLogs
-        .map((log, idx) => log.line.toLowerCase().includes(searchTerm.toLowerCase()) ? idx : -1)
+        .map((log, idx) => matchesLine(log.line) ? idx : -1)
         .filter(idx => idx !== -1);
       matches = indexes.length;
       setMatchIndexes(indexes);
 
       if (onlyShowMatching) {
-        currentLogs = currentLogs.filter(({ line }) => line.toLowerCase().includes(searchTerm.toLowerCase()));
+        currentLogs = currentLogs.filter(({ line }) => matchesLine(line));
         setScrollToIndex(null);
         setMatchIndex(0);
       } else {
@@ -183,8 +193,8 @@ const App: React.FC = () => {
         setMatchIndex(0);
       }
     } else {
-      setScrollToIndex(null);
       setMatchIndexes([]);
+      setScrollToIndex(null);
       setMatchIndex(0);
     }
     setMatchCount(matches);

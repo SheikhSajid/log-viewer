@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import LogMessage, { ValidatedLogLine } from './LogMessage';
 
@@ -49,13 +49,19 @@ const LogContainer: React.FC<LogContainerProps> = ({
     }
   }, [scrollToIndex, logLines.length]);
 
-  const lowerSearch = searchTerm.trim().toLowerCase();
+  const searchTokens = useMemo(
+    () =>
+      searchTerm
+        .split(/[,\s]+/)
+        .map(token => token.trim().toLowerCase())
+        .filter(Boolean),
+    [searchTerm]
+  );
 
   const Row = ({ index, style }: ListChildComponentProps) => {
     const logLine = logLines[index];
-    const isMatch =
-      lowerSearch.length > 0 &&
-      logLine.line.toLowerCase().includes(lowerSearch);
+    const lowerLine = logLine.line.toLowerCase();
+    const isMatch = searchTokens.length > 0 && searchTokens.some(token => lowerLine.includes(token));
 
     // Check if this is the current match being viewed
     const isCurrentMatch = !onlyShowMatching && 
