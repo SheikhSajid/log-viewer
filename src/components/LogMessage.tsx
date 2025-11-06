@@ -19,7 +19,7 @@ export const logSchema = z.object({
     pid: z.number(),
     process: z.string(),
     time_logged: z.string().transform((str) => new Date(str)),
-    version: z.string(),
+    version: z.string().optional(),
   }),
   payload: z.unknown().optional(),
 });
