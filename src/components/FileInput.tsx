@@ -174,7 +174,9 @@ const FileInput: React.FC<FileInputProps> = ({
           parsedLines = validateSyslogLogLines(lines);
         }
         
-        allLines.push(...parsedLines);
+        for (const parsedLine of parsedLines) {
+          allLines.push(parsedLine);
+        }
         filesRead++;
         
         if (filesRead === files.length && allLines.length > 0) {
