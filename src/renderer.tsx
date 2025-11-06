@@ -6,6 +6,7 @@ import Sidebar, { logSource } from './components/Sidebar';
 import NavbarBar from './components/NavbarBar';
 import LogDrawer from './components/LogDrawer';
 import LogContainer from './components/LogContainer';
+import { tokenizeSearchTerm } from './utils/search';
 
 import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -165,10 +166,8 @@ const App: React.FC = () => {
     // Search filtering
     let matches = 0;
     let indexes: number[] = [];
-    const searchTokens = searchTerm
-      .split(/[,\s]+/)
-      .map(token => token.trim().toLowerCase())
-      .filter(Boolean);
+    const searchTokens = tokenizeSearchTerm(searchTerm)
+      .map(token => token.toLowerCase());
 
     if (searchTokens.length > 0) {
       const matchesLine = (line: string) => {

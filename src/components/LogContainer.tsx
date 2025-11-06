@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import LogMessage, { ValidatedLogLine } from './LogMessage';
+import { tokenizeSearchTerm } from '../utils/search';
 
 interface LogContainerProps {
   logLines: ValidatedLogLine[];
@@ -50,11 +51,7 @@ const LogContainer: React.FC<LogContainerProps> = ({
   }, [scrollToIndex, logLines.length]);
 
   const searchTokens = useMemo(
-    () =>
-      searchTerm
-        .split(/[,\s]+/)
-        .map(token => token.trim().toLowerCase())
-        .filter(Boolean),
+    () => tokenizeSearchTerm(searchTerm).map(token => token.toLowerCase()),
     [searchTerm]
   );
 
