@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup, Button } from "@blueprintjs/core";
 import FileInput from './FileInput';
 import { ValidatedLogLine } from './LogMessage';
+import debounce from 'lodash.debounce';
 
 interface NavbarBarProps {
   searchTerm: string;
@@ -37,8 +38,35 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   matchIndex,
   isFileUploadModalOpen,
   onFileUploadModalOpenChange
-}) => (
-  <Navbar style={{ height: 65 }}>
+}) => {
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+
+  const debouncedSetSearchTerm = useMemo(
+    () =>
+      debounce((value: string) => {
+        setSearchTerm(value);
+      }, 300),
+    [setSearchTerm]
+  );
+
+  useEffect(() => {
+    setLocalSearchTerm(searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    return () => {
+      debouncedSetSearchTerm.cancel();
+    };
+  }, [debouncedSetSearchTerm]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearchTerm(value);
+    debouncedSetSearchTerm(value);
+  };
+
+  return (
+    <Navbar style={{ height: 65 }}>
     <NavbarGroup align={Alignment.LEFT} style={{ width: '100%', alignItems: 'flex-start' }}>
       <NavbarHeading>Log Viewer</NavbarHeading>
       <div style={{ display: 'flex', flexDirection: 'column', marginRight: 12, paddingTop: 5 }}>
@@ -46,8 +74,8 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
           <InputGroup
             leftIcon="search"
             placeholder="Search logs..."
-            value={searchTerm}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+            value={localSearchTerm}
+            onChange={handleSearchChange}
             fill={false}
             id="searchBox"
             data-testid="searchBox"
@@ -121,6 +149,7 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
       </div>
     </NavbarGroup>
   </Navbar>
-);
+  );
+};
 
 export default NavbarBar;
