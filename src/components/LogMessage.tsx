@@ -5,6 +5,8 @@ import { logSource } from './Sidebar';
 
 // box log schema
 export const logSchema = z.object({
+  cmd: z.string().optional(),
+  count: z.number().optional(),
   error: z.object({
     code: z.string().optional(),
     message: z.string(),
@@ -231,6 +233,9 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
     }
     if (isSocketServerEvent(logLine)) {
       tags.push(SOCKET_SERVER_EVENT_TAG);
+    }
+    if ('cmd' in log && log.cmd && log.message === 'process counts by command') {
+      tags.push(`cmd:${log.cmd}${typeof log.count === 'number' ? ` (${log.count})` : ''}`);
     }
   }
 
