@@ -2,6 +2,7 @@ import React from 'react';
 import { z } from 'zod';
 import { Text, Tag, Tooltip, Collapse, Pre, Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
+import { getCecAnnotation, CecIntent } from '../utils/cecAnnotations';
 
 // box log schema
 export const logSchema = z.object({
@@ -177,6 +178,13 @@ const TAG_COLORS: Record<string, string> = {
   'process': '#2ecc71'
 };
 
+const CEC_INTENT_COLORS: Record<CecIntent, string> = {
+  none: '#2c7be5',
+  success: '#2e9d5b',
+  warning: '#d9822b',
+  danger: '#db3737'
+};
+
 const DEFAULT_TAG_STYLE = {
   background: '#95a5a6',
   color: '#fff',
@@ -250,6 +258,8 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
     }
   }
 
+  const cecAnnotation = getCecAnnotation(logLine);
+
   // Table-like row layout
   return (
     <>
@@ -277,6 +287,24 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
         <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.meta.name}>{log.meta.name}</div>
         {/* Message/Content + Tags */}
         <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {cecAnnotation && (
+            <Tooltip content={<div style={{ maxWidth: 420, whiteSpace: 'normal' }}>{cecAnnotation.detail}</div>} position="bottom-left">
+              <Tag
+                minimal
+                style={{
+                  fontSize: 11,
+                  height: 18,
+                  lineHeight: '16px',
+                  padding: '0 6px',
+                  background: CEC_INTENT_COLORS[cecAnnotation.intent],
+                  color: '#fff',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                CEC · {cecAnnotation.label}
+              </Tag>
+            </Tooltip>
+          )}
           {tags.length > 0 && (
             <span style={{ display: 'flex', gap: 4 }}>
               {tags.map((tag, idx) => (
