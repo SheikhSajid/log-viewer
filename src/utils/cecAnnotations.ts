@@ -339,7 +339,7 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
       : {
           label: 'event type 2 = HDMI hotplug',
           detail: `Event type 2 is HDMI_EVENT_HOT_PLUG in Android's hdmi_cec.h: the HDMI connection changed. ${relay} The hdmicecd "connect status changed" line nearby gives the direction.`,
-          intent: 'none'
+          intent: 'warning'
         };
   }
   if (name === 'hdmicecd') {
@@ -351,7 +351,7 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
         detail: connected
           ? 'The CEC daemon sees the display\'s hotplug-detect line go high.'
           : 'The CEC daemon sees the display\'s hotplug-detect line go low (display into standby, booting, or unplugged).',
-        intent: connected ? 'none' : 'warning'
+        intent: connected ? 'success' : 'danger'
       };
     }
     // Printed as hex digits, e.g. "2000" is 2.0.0.0
@@ -403,7 +403,7 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
         ? {
             label: 'value 0 = HDMI plug out',
             detail: 'Hotplug-detect from the display dropped. Seen when the display goes into standby, reboots its main board, or is unplugged.',
-            intent: 'warning'
+            intent: 'danger'
           }
         : {
             label: 'value 1 = HDMI plug in',
@@ -453,7 +453,7 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
         ? {
             label: 'HDMI plug out',
             detail: 'Kernel HDMI driver saw hotplug-detect drop. Seen when the display goes into standby, reboots its main board, or is unplugged. dmesg can miss some of these, logcat MesonHwc lines have them all.',
-            intent: 'warning'
+            intent: 'danger'
           }
         : {
             label: 'HDMI plug in',
