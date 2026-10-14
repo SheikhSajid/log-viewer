@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useState, useEffect, useMemo, Component, ErrorInfo, ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { levelProps, LogLevel, ValidatedLogLine } from './components/LogMessage';
@@ -7,6 +7,7 @@ import NavbarBar from './components/NavbarBar';
 import LogDrawer from './components/LogDrawer';
 import LogContainer from './components/LogContainer';
 import { tokenizeSearchTerm } from './utils/search';
+import { buildTimezoneOptions } from './utils/timezone';
 
 import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -93,8 +94,9 @@ const App: React.FC = () => {
   const [matchIndexes, setMatchIndexes] = useState<number[]>([]);
   
   // State for timezone selection
-  const [selectedTimezone, setSelectedTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  const [timezones, setTimezones] = useState<string[]>([]);
+  const [selectedTimezone, setSelectedTimezone] = useState('UTC');
+  const [detectedTimezone, setDetectedTimezone] = useState<string | null>(null);
+  const timezones = useMemo(() => buildTimezoneOptions(detectedTimezone), [detectedTimezone]);
   
   // State for log details drawer
   const [selectedLog, setSelectedLog] = useState<ValidatedLogLine | null>(null);
@@ -104,11 +106,6 @@ const App: React.FC = () => {
   const [dateRange, setDateRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
   const [logSources, setLogSources] = useState<Record<logSource, boolean>>({ Box: false, Syslog: false, Dmesg: false });
   const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
-
-  useEffect(() => {
-    const availableTimezones = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : [selectedTimezone];
-    setTimezones(availableTimezones);
-  }, [selectedTimezone]);
 
   useEffect(() => {
     let currentLogs = allLogs;
@@ -277,8 +274,13 @@ const App: React.FC = () => {
           selectedTimezone={selectedTimezone}
           setSelectedTimezone={setSelectedTimezone}
           timezones={timezones}
-          onLogsLoaded={(logs) => {
+          onLogsLoaded={(logs, timezone) => {
             setAllLogs(logs);
+            // Undefined means the logs did not come from files (e.g. dummy data), so keep the current choice
+            if (timezone !== undefined) {
+              setDetectedTimezone(timezone);
+              setSelectedTimezone(timezone ?? 'UTC');
+            }
             if (logs.length > 0) {
               setIsFileUploadModalOpen(false);
             }

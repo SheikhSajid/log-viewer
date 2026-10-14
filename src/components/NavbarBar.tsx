@@ -10,7 +10,7 @@ interface NavbarBarProps {
   selectedTimezone: string;
   setSelectedTimezone: (tz: string) => void;
   timezones: string[];
-  onLogsLoaded: (logs: ValidatedLogLine[]) => void;
+  onLogsLoaded: (logs: ValidatedLogLine[], detectedTimezone?: string | null) => void;
   onlyShowMatching: boolean;
   setOnlyShowMatching: (val: boolean) => void;
   matchCount?: number;

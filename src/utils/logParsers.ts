@@ -1,4 +1,5 @@
 import { logSchema, syslogSchema, dmesgSchema, loggerJsonSchema, ValidatedLogLine, ReceptionistParamsSchema } from '../components/LogMessage';
+import { dmesgWallTimeToIso } from './timezone';
 
 export function validateBoxLogLines(lines: string[]): ValidatedLogLine[] {
     const processedLines = lines.map((line, index) => {
@@ -116,7 +117,7 @@ export function validateSyslogLogLines(lines: string[]): ValidatedLogLine[] {
 }
 
 // Parse `dmesg -T` lines, e.g. "[Thu Sep 24 22:00:08 2026] usb 1-1.3.2.2.1.1: USB disconnect, device number 8"
-export function validateDmesgLogLines(lines: string[]): ValidatedLogLine[] {
+export function validateDmesgLogLines(lines: string[], timeZone: string = 'UTC'): ValidatedLogLine[] {
   const dmesgRegex = /^\[([A-Za-z]{3} [A-Za-z]{3} +\d{1,2} \d{2}:\d{2}:\d{2} \d{4})\]\s?(.*)$/;
   // Subsystem prefix such as "usb 1-1.3.2.2: ..." or "audit: ..."
   const subsystemRegex = /^([A-Za-z_][\w.-]*)(?: [^:]*)?:/;
@@ -130,17 +131,22 @@ export function validateDmesgLogLines(lines: string[]): ValidatedLogLine[] {
     }
 
     const [ , timestamp, message ] = match;
+    // dmesg -T prints device-local wall time, so convert it to UTC like the other sources
+    const timeLogged = dmesgWallTimeToIso(timestamp, timeZone);
+    if (!timeLogged) {
+      return { valid: false, line, error: 'Invalid dmesg timestamp', id, src: 'Dmesg' as const };
+    }
     const subsystem = subsystemRegex.exec(message);
     const validationResult = dmesgSchema.safeParse({
       level: 'I',
       message,
       meta: {
         name: subsystem ? subsystem[1] : 'kernel',
-        time_logged: timestamp
+        time_logged: timeLogged
       }
     });
 
-    if (validationResult.success && !isNaN(validationResult.data.meta.time_logged.getTime())) {
+    if (validationResult.success) {
       return { valid: true, line, parsedLog: validationResult.data, id, src: 'Dmesg' as const };
     }
     return { valid: false, line, error: 'Schema validation failed', id, src: 'Dmesg' as const };
