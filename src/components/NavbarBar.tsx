@@ -13,6 +13,8 @@ interface NavbarBarProps {
   timezones: string[];
   onLogsLoaded: (logs: ValidatedLogLine[], info?: LogsLoadedInfo) => void;
   boxInfo: BoxInfo | null;
+  gapSeconds: number;
+  setGapSeconds: (seconds: number) => void;
   onlyShowMatching: boolean;
   setOnlyShowMatching: (val: boolean) => void;
   matchCount?: number;
@@ -32,6 +34,8 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   timezones,
   onLogsLoaded,
   boxInfo,
+  gapSeconds,
+  setGapSeconds,
   onlyShowMatching,
   setOnlyShowMatching,
   matchCount,
@@ -43,6 +47,17 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   onFileUploadModalOpenChange
 }) => {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+  // Typed text can be empty or half finished, so it is kept separate from the applied value
+  const [gapText, setGapText] = useState(String(gapSeconds));
+
+  const handleGapChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+    setGapText(text);
+    const seconds = parseFloat(text);
+    if (text.trim() !== '' && isFinite(seconds) && seconds >= 0) {
+      setGapSeconds(seconds);
+    }
+  };
 
   const debouncedSetSearchTerm = useMemo(
     () =>
@@ -163,6 +178,19 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
         >
           {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
         </select>
+      </div>
+      <div style={{ marginLeft: 20 }} title="Show a gap marker between logs that are further apart than this. 0 turns it off.">
+        <label htmlFor="gapSeconds" style={{ color: '#182026', marginRight: 8 }}>Gap (s):</label>
+        <input
+          id="gapSeconds"
+          type="number"
+          min={0}
+          step={1}
+          value={gapText}
+          onChange={handleGapChange}
+          onBlur={() => setGapText(String(gapSeconds))}
+          style={{ width: 70 }}
+        />
       </div>
       <div style={{ flex: 1 }} />
       <div style={{ marginLeft: 20 }}>

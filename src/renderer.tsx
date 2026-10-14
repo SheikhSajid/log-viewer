@@ -81,8 +81,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-// Show a marker between consecutive logs that are further apart than this
-const GAP_THRESHOLD_MS = 10_000;
+// Default for how far apart (in seconds) consecutive logs must be to get a gap marker
+const DEFAULT_GAP_SECONDS = 10;
 
 const App: React.FC = () => {
   // State for all logs and filtered logs
@@ -102,6 +102,7 @@ const App: React.FC = () => {
   const [selectedTimezone, setSelectedTimezone] = useState('UTC');
   const [detectedTimezone, setDetectedTimezone] = useState<string | null>(null);
   const [boxInfo, setBoxInfo] = useState<BoxInfo | null>(null);
+  const [gapSeconds, setGapSeconds] = useState(DEFAULT_GAP_SECONDS);
   const timezones = useMemo(() => buildTimezoneOptions(detectedTimezone), [detectedTimezone]);
   
   // State for log details drawer
@@ -308,6 +309,8 @@ const App: React.FC = () => {
           setSelectedTimezone={setSelectedTimezone}
           timezones={timezones}
           boxInfo={boxInfo}
+          gapSeconds={gapSeconds}
+          setGapSeconds={setGapSeconds}
           onLogsLoaded={(logs, info) => {
             setAllLogs(logs);
             // Undefined means the logs did not come from files (e.g. dummy data), so keep the current choice
@@ -339,7 +342,7 @@ const App: React.FC = () => {
           onlyShowMatching={onlyShowMatching}
           matchIndex={matchIndex}
           matchIndexes={matchIndexes}
-          gapThresholdMs={GAP_THRESHOLD_MS}
+          gapThresholdMs={gapSeconds * 1000}
         />
         <LogDrawer
           isOpen={drawerOpen}
