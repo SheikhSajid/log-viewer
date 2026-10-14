@@ -178,7 +178,7 @@ const TAG_COLORS: Record<string, string> = {
   'process': '#2ecc71'
 };
 
-const CEC_INTENT_COLORS: Record<CecIntent, string> = {
+export const CEC_INTENT_COLORS: Record<CecIntent, string> = {
   none: '#2c7be5',
   success: '#2e9d5b',
   warning: '#d9822b',

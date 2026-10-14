@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { H5, Button, Checkbox, Collapse, Icon } from "@blueprintjs/core";
 import { DateInput3 } from "@blueprintjs/datetime2";
-import { LogLevel } from './LogMessage';
+import { LogLevel, CEC_INTENT_COLORS } from './LogMessage';
+import { CecTag } from '../utils/cec';
 
 type logSource = 'Box' | 'Syslog' | 'Dmesg';
 
@@ -12,6 +13,9 @@ interface SidebarProps {
   handleSourceChange: (source: logSource) => void;
   severity: Record<LogLevel, boolean>;
   handleSeverityChange: (level: LogLevel) => void;
+  cecTags: CecTag[];
+  selectedCecTags: Set<string>;
+  handleCecTagChange: (tag: string) => void;
 }
 
 // Section with a clickable header that shows/hides its content. Filters keep applying while collapsed,
@@ -43,7 +47,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   logSources,
   handleSourceChange,
   severity,
-  handleSeverityChange
+  handleSeverityChange,
+  cecTags,
+  selectedCecTags,
+  handleCecTagChange
 }) => {
   const [selectedDateRange, setSelectedDateRange] = useState<{ start: Date | null, end: Date | null }>({ ...dateRange });
 
@@ -109,6 +116,27 @@ const Sidebar: React.FC<SidebarProps> = ({
         <Checkbox checked={severity.info} label="Info" onChange={() => handleSeverityChange('info')} />
         <Checkbox checked={severity.verbose} label="Verbose" onChange={() => handleSeverityChange('verbose')} />
         <Checkbox checked={severity.D} label="Debug (Syslog only)" onChange={() => handleSeverityChange('D')} />
+      </CollapsibleSection>
+      <CollapsibleSection title="CEC" activeCount={selectedCecTags.size} style={{ marginTop: 18 }}>
+        {cecTags.length === 0 ? (
+          <div style={{ fontSize: 13, color: '#5c7080' }}>No CEC tags detected</div>
+        ) : (
+          <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+            {cecTags.map(({ tag, count, intent }) => (
+              <Checkbox
+                key={tag}
+                checked={selectedCecTags.has(tag)}
+                onChange={() => handleCecTagChange(tag)}
+                labelElement={
+                  <span title={tag} style={{ fontSize: 13 }}>
+                    <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 4, marginRight: 6, background: CEC_INTENT_COLORS[intent] }} />
+                    {tag} <span style={{ color: '#5c7080', fontSize: 12 }}>({count.toLocaleString()})</span>
+                  </span>
+                }
+              />
+            ))}
+          </div>
+        )}
       </CollapsibleSection>
     </div>
   );

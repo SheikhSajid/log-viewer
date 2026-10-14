@@ -9,6 +9,7 @@ import LogContainer from './components/LogContainer';
 import { tokenizeSearchTerm } from './utils/search';
 import { buildTimezoneOptions } from './utils/timezone';
 import { BoxInfo } from './utils/boxInfo';
+import { buildCecIndex } from './utils/cec';
 
 import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -109,6 +110,20 @@ const App: React.FC = () => {
   const [logSources, setLogSources] = useState<Record<logSource, boolean>>({ Box: false, Syslog: false, Dmesg: false });
   const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
 
+  // CEC tags (the labels of the "CEC · ..." pills) found in the loaded logs, and the ones ticked in the sidebar
+  const cecIndex = useMemo(() => buildCecIndex(allLogs), [allLogs]);
+  const cecTags = cecIndex.tags;
+  const [selectedCecTags, setSelectedCecTags] = useState<Set<string>>(new Set());
+
+  // Forget selected tags that no longer exist after loading different logs
+  useEffect(() => {
+    setSelectedCecTags(selected => {
+      const available = new Set(cecTags.map(t => t.tag));
+      const kept = [...selected].filter(tag => available.has(tag));
+      return kept.length === selected.size ? selected : new Set(kept);
+    });
+  }, [cecTags]);
+
   useEffect(() => {
     let currentLogs = allLogs;
 
@@ -123,6 +138,11 @@ const App: React.FC = () => {
 
     if (selectedSources.length > 0) {
       currentLogs = currentLogs.filter(log => selectedSources.includes(log.src));
+    }
+
+    // CEC tag filtering
+    if (selectedCecTags.size > 0) {
+      currentLogs = currentLogs.filter(log => selectedCecTags.has(cecIndex.tagOf.get(log) ?? ''));
     }
 
     // Date filtering
@@ -197,7 +217,7 @@ const App: React.FC = () => {
     }
     setMatchCount(matches);
     setFilteredLogs(currentLogs);
-  }, [allLogs, logSources, searchTerm, severity, dateRange, onlyShowMatching]);
+  }, [allLogs, logSources, searchTerm, severity, dateRange, onlyShowMatching, selectedCecTags, cecIndex]);
 
   // When matchIndex changes, scroll to the new match (only when not onlyShowMatching)
   useEffect(() => {
@@ -241,6 +261,11 @@ const App: React.FC = () => {
 
   // Sidebar filter handlers
   const handleSourceChange = (source: logSource) => setLogSources(s => ({ ...s, [source]: !s[source] }));
+  const handleCecTagChange = (tag: string) => setSelectedCecTags(selected => {
+    const next = new Set(selected);
+    if (!next.delete(tag)) next.add(tag);
+    return next;
+  });
   const handleSeverityChange = (level: LogLevel) => setSeverity(s => ({ ...s, [level]: !s[level] }));
 
   const handlePrevMatch = () => {
@@ -266,6 +291,9 @@ const App: React.FC = () => {
         handleSourceChange={handleSourceChange}
         severity={severity}
         handleSeverityChange={handleSeverityChange}
+        cecTags={cecTags}
+        selectedCecTags={selectedCecTags}
+        handleCecTagChange={handleCecTagChange}
       />
 
       {/* Main content */}
