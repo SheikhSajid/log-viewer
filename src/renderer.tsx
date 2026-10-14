@@ -115,7 +115,7 @@ const App: React.FC = () => {
      * 
      * TODO: Fix types for Object.entries
      */
-    const selectedSources = Object.entries(logSources)
+    const selectedSources = Object.entries(logSources) // TODO: Fix types for Object.entries
       .filter(([_, isSelected]) => isSelected)
       .map(([source]) => source as logSource);
 
@@ -141,7 +141,7 @@ const App: React.FC = () => {
      * 
      * TODO: Fix types
      */
-    const selectedSeverityLabels = Object.entries(severity)
+    const selectedSeverityLabels = Object.entries(severity) // TODO: Fix types for Object.entries
       .filter(([_, isSelected]) => isSelected)
       .map(([level]) => levelProps[level as LogLevel].label);
 

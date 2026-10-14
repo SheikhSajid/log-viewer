@@ -15,7 +15,7 @@ async function getDirectoryFiles(directoryHandle: FileSystemDirectoryEntry): Pro
   const readEntries = (): Promise<FileSystemEntry[]> => {
     return new Promise((resolve, reject) => {
       reader.readEntries(
-        (entries) => resolve(entries as FileSystemEntry[]),
+        (entries) => resolve(entries),
         (error) => reject(error)
       );
     });
@@ -31,9 +31,9 @@ async function getDirectoryFiles(directoryHandle: FileSystemDirectoryEntry): Pro
       // Process files in the current batch
       const filePromises = entries
         .filter(entry => entry.isFile)
-        .map(entry => getFile(entry as FileSystemFileEntryExtended));
+        .map(entry => getFile(entry as FileSystemFileEntryExtended)); // TODO: Fix types for FileSystemFileEntryExtended
       
-      const batchFiles = (await Promise.all(filePromises)).filter(Boolean) as File[];
+      const batchFiles = (await Promise.all(filePromises)).filter(Boolean) as File[]; // TODO: Fix type assertion
       files.push(...batchFiles);
       
     } while (entries.length > 0);
@@ -228,7 +228,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
           } else if (entry.isDirectory) {
             // Directory - process only top-level files
             try {
-              const dirFiles = await getDirectoryFiles(entry as FileSystemDirectoryEntry);
+              const dirFiles = await getDirectoryFiles(entry as FileSystemDirectoryEntry); // TODO: Fix type assertion
               const filteredFiles = dirFiles.filter(file => 
                 isSupportedLogFile(file)
               );
