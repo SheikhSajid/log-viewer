@@ -1,7 +1,23 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
+import { VariableSizeList as List, ListChildComponentProps } from 'react-window';
 import LogMessage, { ValidatedLogLine } from './LogMessage';
 import { tokenizeSearchTerm } from '../utils/search';
+
+// Height of the strip shown above a row that follows a long time gap
+const GAP_HEIGHT = 26;
+
+// 45s, 2m 5s, 3h 12m, 2d 4h
+function formatGap(ms: number): string {
+  const totalSeconds = Math.round(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
 
 interface LogContainerProps {
   logLines: ValidatedLogLine[];
@@ -19,6 +35,9 @@ interface LogContainerProps {
   onlyShowMatching?: boolean;
   matchIndex?: number;
   matchIndexes?: number[];
+  // Show a gap marker above a log whose time is more than this many ms after the previous log's.
+  // Leave undefined to turn gap markers off.
+  gapThresholdMs?: number;
 }
 
 const LogContainer: React.FC<LogContainerProps> = ({
@@ -29,7 +48,8 @@ const LogContainer: React.FC<LogContainerProps> = ({
   searchTerm = '',
   onlyShowMatching = true,
   matchIndex,
-  matchIndexes = []
+  matchIndexes = [],
+  gapThresholdMs
 }) => {
   const itemSize = 31;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,6 +82,33 @@ const LogContainer: React.FC<LogContainerProps> = ({
     [searchTerm]
   );
 
+  // Index of each log line that comes after a gap, with the size of the gap in ms. Lines without a
+  // timestamp (unparsed ones) are skipped, so the gap is measured against the last line that has one.
+  const gaps = useMemo(() => {
+    const result = new Map<number, number>();
+    if (!gapThresholdMs || gapThresholdMs <= 0) return result;
+    let previousTime: number | null = null;
+    logLines.forEach((log, index) => {
+      if (!log.valid || !log.parsedLog) return;
+      const time = log.parsedLog.meta.time_logged.getTime();
+      if (isNaN(time)) return;
+      if (previousTime !== null && time - previousTime > gapThresholdMs) {
+        result.set(index, time - previousTime);
+      }
+      previousTime = time;
+    });
+    return result;
+  }, [logLines, gapThresholdMs]);
+
+  // Rows with a gap marker are taller, so the list needs to know each row's height
+  const getItemSize = (index: number) => itemSize + (gaps.has(index) ? GAP_HEIGHT : 0);
+  const estimatedItemSize = itemSize + (logLines.length > 0 ? (gaps.size * GAP_HEIGHT) / logLines.length : 0);
+
+  // react-window caches row heights, so drop the cache whenever the gaps change
+  useLayoutEffect(() => {
+    listRef.current?.resetAfterIndex(0);
+  }, [gaps]);
+
   const Row = ({ index, style }: ListChildComponentProps) => {
     const logLine = logLines[index];
     const lowerLine = logLine.line.toLowerCase();
@@ -76,21 +123,45 @@ const LogContainer: React.FC<LogContainerProps> = ({
     // Only highlight if onlyShowMatching is false
     const shouldHighlight = !onlyShowMatching && isMatch;
 
+    const gap = gaps.get(index);
+
     return (
-      <div
-        style={{
-          ...style,
-          cursor: 'pointer',
-          background: isCurrentMatch ? 'rgba(255,165,0,0.3)' : (shouldHighlight ? 'rgba(255,255,0,0.18)' : undefined)
-        }}
-        onClick={() => onLogClick(logLine)}
-      >
-        <LogMessage
-          logLine={logLine}
-          selectedTimezone={selectedTimezone}
-          highlight={shouldHighlight}
-          isCurrentMatch={isCurrentMatch}
-        />
+      <div style={style}>
+        {gap !== undefined && (
+          <div
+            style={{
+              height: GAP_HEIGHT,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '0 12px',
+              boxSizing: 'border-box',
+              background: '#f5f8fa',
+              color: '#5c7080',
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: 'monospace'
+            }}
+          >
+            <span style={{ whiteSpace: 'nowrap' }}>{formatGap(gap)} gap</span>
+            <span style={{ flex: 1, borderTop: '1px dashed #bfccd6' }} />
+          </div>
+        )}
+        <div
+          style={{
+            height: itemSize,
+            cursor: 'pointer',
+            background: isCurrentMatch ? 'rgba(255,165,0,0.3)' : (shouldHighlight ? 'rgba(255,255,0,0.18)' : undefined)
+          }}
+          onClick={() => onLogClick(logLine)}
+        >
+          <LogMessage
+            logLine={logLine}
+            selectedTimezone={selectedTimezone}
+            highlight={shouldHighlight}
+            isCurrentMatch={isCurrentMatch}
+          />
+        </div>
       </div>
     );
   };
@@ -104,7 +175,8 @@ const LogContainer: React.FC<LogContainerProps> = ({
       <List
         height={height}
         itemCount={logLines.length}
-        itemSize={itemSize}
+        itemSize={getItemSize}
+        estimatedItemSize={estimatedItemSize}
         width={"200%"}
         ref={listRef}
       >

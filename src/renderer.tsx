@@ -81,6 +81,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+// Show a marker between consecutive logs that are further apart than this
+const GAP_THRESHOLD_MS = 10_000;
+
 const App: React.FC = () => {
   // State for all logs and filtered logs
   const [allLogs, setAllLogs] = useState<ValidatedLogLine[]>([]);
@@ -336,6 +339,7 @@ const App: React.FC = () => {
           onlyShowMatching={onlyShowMatching}
           matchIndex={matchIndex}
           matchIndexes={matchIndexes}
+          gapThresholdMs={GAP_THRESHOLD_MS}
         />
         <LogDrawer
           isOpen={drawerOpen}
