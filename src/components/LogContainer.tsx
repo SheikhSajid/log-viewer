@@ -6,8 +6,15 @@ import { tokenizeSearchTerm } from '../utils/search';
 interface LogContainerProps {
   logLines: ValidatedLogLine[];
   onLogClick: (log: ValidatedLogLine) => void;
+
+  /*
+   * TODO: Seems like all the props should be moved to a parent component that handles
+   * the search and filtering, and then pass down the filtered logLines to this
+   * component. This would simplify the LogContainer component and make it more
+   * focused on rendering the logs.
+   */
   selectedTimezone: string;
-  scrollToIndex?: number | null;
+  scrollToIndex?: number | null; // TODO: figure out why this is sometimes null and sometimes undefined
   searchTerm?: string;
   onlyShowMatching?: boolean;
   matchIndex?: number;
