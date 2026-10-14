@@ -3,6 +3,7 @@ import { Navbar, NavbarGroup, NavbarHeading, Alignment, InputGroup, Button } fro
 import FileInput from './FileInput';
 import { ValidatedLogLine } from './LogMessage';
 import debounce from 'lodash.debounce';
+import { BoxInfo, LogsLoadedInfo } from '../utils/boxInfo';
 
 interface NavbarBarProps {
   searchTerm: string;
@@ -10,7 +11,8 @@ interface NavbarBarProps {
   selectedTimezone: string;
   setSelectedTimezone: (tz: string) => void;
   timezones: string[];
-  onLogsLoaded: (logs: ValidatedLogLine[], detectedTimezone?: string | null) => void;
+  onLogsLoaded: (logs: ValidatedLogLine[], info?: LogsLoadedInfo) => void;
+  boxInfo: BoxInfo | null;
   onlyShowMatching: boolean;
   setOnlyShowMatching: (val: boolean) => void;
   matchCount?: number;
@@ -29,6 +31,7 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
   setSelectedTimezone,
   timezones,
   onLogsLoaded,
+  boxInfo,
   onlyShowMatching,
   setOnlyShowMatching,
   matchCount,
@@ -69,6 +72,18 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
     <Navbar style={{ height: 65 }}>
     <NavbarGroup align={Alignment.LEFT} style={{ width: '100%', alignItems: 'flex-start' }}>
       <NavbarHeading>Log Viewer</NavbarHeading>
+      {boxInfo && (boxInfo.roomName || boxInfo.macAddress) && (
+        <div style={{ display: 'flex', flexDirection: 'column', marginRight: 16, paddingTop: 2, lineHeight: '17px', fontSize: 12, color: '#182026', maxWidth: 260 }}>
+          {boxInfo.roomName && (
+            <span title={boxInfo.roomName} style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {boxInfo.roomName}
+            </span>
+          )}
+          {boxInfo.macAddress && (
+            <span style={{ fontFamily: 'monospace', opacity: 0.75, userSelect: 'text' }}>{boxInfo.macAddress}</span>
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', marginRight: 12, paddingTop: 5 }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <InputGroup

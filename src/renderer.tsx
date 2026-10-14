@@ -8,6 +8,7 @@ import LogDrawer from './components/LogDrawer';
 import LogContainer from './components/LogContainer';
 import { tokenizeSearchTerm } from './utils/search';
 import { buildTimezoneOptions } from './utils/timezone';
+import { BoxInfo } from './utils/boxInfo';
 
 import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -96,6 +97,7 @@ const App: React.FC = () => {
   // State for timezone selection
   const [selectedTimezone, setSelectedTimezone] = useState('UTC');
   const [detectedTimezone, setDetectedTimezone] = useState<string | null>(null);
+  const [boxInfo, setBoxInfo] = useState<BoxInfo | null>(null);
   const timezones = useMemo(() => buildTimezoneOptions(detectedTimezone), [detectedTimezone]);
   
   // State for log details drawer
@@ -274,12 +276,14 @@ const App: React.FC = () => {
           selectedTimezone={selectedTimezone}
           setSelectedTimezone={setSelectedTimezone}
           timezones={timezones}
-          onLogsLoaded={(logs, timezone) => {
+          boxInfo={boxInfo}
+          onLogsLoaded={(logs, info) => {
             setAllLogs(logs);
             // Undefined means the logs did not come from files (e.g. dummy data), so keep the current choice
-            if (timezone !== undefined) {
-              setDetectedTimezone(timezone);
-              setSelectedTimezone(timezone ?? 'UTC');
+            if (info) {
+              setDetectedTimezone(info.timezone);
+              setSelectedTimezone(info.timezone ?? 'UTC');
+              setBoxInfo(info.box);
             }
             if (logs.length > 0) {
               setIsFileUploadModalOpen(false);

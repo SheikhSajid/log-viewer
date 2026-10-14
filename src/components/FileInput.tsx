@@ -4,10 +4,11 @@ import { validateBoxLogLines, validateSyslogLogLines, validateDmesgLogLines } fr
 import { Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
 import { detectTimezone } from '../utils/timezone';
+import { detectBoxInfo, LogsLoadedInfo } from '../utils/boxInfo';
 import FileUploadModal from './FileUploadModal';
 
 interface FileInputProps {
-  onLogsLoaded: (logs: ValidatedLogLine[], detectedTimezone?: string | null) => void;
+  onLogsLoaded: (logs: ValidatedLogLine[], info?: LogsLoadedInfo) => void;
   isModalOpen: boolean;
   onModalOpenChange: (isOpen: boolean) => void;
 }
@@ -18,14 +19,14 @@ const FileInput: React.FC<FileInputProps> = ({
   onModalOpenChange 
 }) => {
 
-  const sortAndLoadLogs = (logs: ValidatedLogLine[], detectedTimezone?: string | null) => {
+  const sortAndLoadLogs = (logs: ValidatedLogLine[], info?: LogsLoadedInfo) => {
     // Sort logs by time_logged if available
     logs.sort((a, b) => {
       const aTime = a.valid && a.parsedLog ? a.parsedLog.meta.time_logged.getTime() : 0;
       const bTime = b.valid && b.parsedLog ? b.parsedLog.meta.time_logged.getTime() : 0;
       return aTime - bTime;
     });
-    onLogsLoaded(logs, detectedTimezone);
+    onLogsLoaded(logs, info);
   };
 
   const processFiles = async (files: File[]) => {
@@ -51,10 +52,10 @@ const FileInput: React.FC<FileInputProps> = ({
       }
     }));
 
-    const detectedTimezone = detectTimezone(
-      loaded.filter(f => f.src === 'Box').map(f => f.text),
-      loaded.filter(f => f.src === 'Syslog').map(f => f.text)
-    );
+    const boxTexts = loaded.filter(f => f.src === 'Box').map(f => f.text);
+    const syslogTexts = loaded.filter(f => f.src === 'Syslog').map(f => f.text);
+    const detectedTimezone = detectTimezone(boxTexts, syslogTexts);
+    const box = detectBoxInfo(boxTexts, syslogTexts);
 
     const allLines: ValidatedLogLine[] = [];
     for (const { src, text } of loaded) {
@@ -70,7 +71,7 @@ const FileInput: React.FC<FileInputProps> = ({
     }
 
     if (allLines.length > 0) {
-      sortAndLoadLogs(allLines, detectedTimezone);
+      sortAndLoadLogs(allLines, { timezone: detectedTimezone, box });
     }
   };
 
