@@ -291,6 +291,7 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
             <Tooltip content={<div style={{ maxWidth: 420, whiteSpace: 'normal' }}>{cecAnnotation.detail}</div>} position="bottom-left">
               <Tag
                 minimal
+                rightIcon="info-sign"
                 style={{
                   fontSize: 11,
                   height: 18,

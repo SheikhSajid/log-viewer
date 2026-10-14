@@ -73,6 +73,12 @@ const ABORT_REASONS: Record<number, string> = {
 };
 
 // Result codes from Android's hdmi_cec.h
+const SEND_RESULT_LABELS: Record<number, string> = {
+  1: 'no ACK',
+  2: 'bus busy',
+  3: 'failed'
+};
+
 const SEND_RESULTS: Record<number, string> = {
   1: 'no device acknowledged it (NACK)',
   2: 'the CEC bus was busy',
@@ -107,7 +113,7 @@ function describeFrame(frame: string): CecAnnotation | null {
   const [header, opcode, ...params] = bytes;
   const from = addressName(header >> 4);
   const to = addressName(header & 0xf);
-  const label = `${opcodeName(opcode)}: ${from} → ${to}`;
+  const label = `${frame.trim().replace(/\s+/g, ' ')} = ${opcodeName(opcode)}, ${from} → ${to}`;
 
   if (opcode === 0x82 && params.length >= 2) {
     const physicalAddress = formatPhysicalAddress(params[0], params[1]);
@@ -129,16 +135,22 @@ function describeFrame(frame: string): CecAnnotation | null {
 function describeAndroidMessage(name: string, src: string, dst: string, params: string) {
   const from = addressName(parseInt(src, 10));
   const to = addressName(parseInt(dst, 10));
-  const paramBytes = params.trim().split(/\s+/).filter(Boolean).map(byte => parseInt(byte, 16));
+  const rawParams = params.trim().split(/\s+/).filter(Boolean);
+  const paramBytes = rawParams.map(byte => parseInt(byte, 16));
+  let decodedParams = '';
   let meaning = '';
 
   if (name === 'Report Power Status' && paramBytes.length > 0) {
-    meaning = ` ${from} says its power status is ${POWER_STATUS[paramBytes[0]] ?? `unknown (${paramBytes[0]})`}.`;
+    const status = POWER_STATUS[paramBytes[0]] ?? 'unknown';
+    decodedParams = `: ${rawParams[0]} = ${status}`;
+    meaning = ` ${from} says its power status is ${status}.`;
   } else if (name === 'Feature Abort' && paramBytes.length >= 2) {
-    meaning = ` ${from} rejected ${opcodeName(paramBytes[0])} (0x${paramBytes[0].toString(16)}): ${ABORT_REASONS[paramBytes[1]] ?? `reason ${paramBytes[1]}`}.`;
+    const reason = ABORT_REASONS[paramBytes[1]] ?? 'unknown reason';
+    decodedParams = `: ${rawParams[0]} = ${opcodeName(paramBytes[0])}, ${rawParams[1]} = ${reason}`;
+    meaning = ` ${from} rejected ${opcodeName(paramBytes[0])}: ${reason}.`;
   }
 
-  return { label: `${name}: ${from} → ${to}`, meaning };
+  return { label: `${name}, ${from} → ${to}${decodedParams}`, meaning };
 }
 
 const RECEPTIONIST_DETAILS = new Map<string, CecAnnotation>(Object.entries({
@@ -308,36 +320,34 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
     }
   }
 
-  // --- Amlogic CEC HAL / daemon
-  if (name === 'CEC') {
-    if (/send cec message, event type = 1/.test(message)) {
-      return {
-        label: 'CEC message received',
-        detail: 'hdmicecd is passing a received CEC message up to Android\'s CEC service. "send" means forwarding to Android, not transmitting. The message itself is not logged unless Android fails to handle it.',
-        intent: 'none'
-      };
-    }
-    if (/cec hot plug, event type = 2/.test(message)) {
-      return {
-        label: 'HDMI hotplug event',
-        detail: 'HDMI hotplug change passed to Android\'s CEC service. See the nearby hdmicecd "connect status changed" line for the direction.',
-        intent: 'none'
-      };
-    }
-  }
-  if (name === 'hdmicecd-client' && /notifyCallback event type:\s*1/.test(message)) {
-    return {
-      label: 'CEC message received',
-      detail: 'Client side of hdmicecd handing a received CEC message to Android. Pairs with the CEC "[onEventUpdate]send cec message" line.',
-      intent: 'none'
-    };
+  // --- Amlogic CEC HAL / daemon. Event types come from Android's hdmi_cec.h:
+  // 1 = HDMI_EVENT_CEC_MESSAGE (a message was received), 2 = HDMI_EVENT_HOT_PLUG
+  match = name === 'CEC' || name === 'hdmicecd-client'
+    ? /event type\s*[:=]\s*([12])\b/.exec(message)
+    : null;
+  if (match) {
+    const isMessage = match[1] === '1';
+    const relay = name === 'CEC'
+      ? 'The CEC HAL is forwarding it up to Android\'s CEC service ("send" means forwarding to Android, not transmitting on the bus).'
+      : 'This is hdmicecd\'s client handing the event to Android. It pairs with the CEC "[onEventUpdate]" line logged at the same moment.';
+    return isMessage
+      ? {
+          label: 'event type 1 = received CEC message',
+          detail: `Event type 1 is HDMI_EVENT_CEC_MESSAGE in Android's hdmi_cec.h: the box received a CEC message. ${relay} Sender and contents are not logged unless Android fails to handle it.`,
+          intent: 'none'
+        }
+      : {
+          label: 'event type 2 = HDMI hotplug',
+          detail: `Event type 2 is HDMI_EVENT_HOT_PLUG in Android's hdmi_cec.h: the HDMI connection changed. ${relay} The hdmicecd "connect status changed" line nearby gives the direction.`,
+          intent: 'none'
+        };
   }
   if (name === 'hdmicecd') {
     match = /connect status changed, now:(\d+), prevStatus:(\d+)/.exec(message);
     if (match) {
       const connected = match[1] === '1';
       return {
-        label: connected ? 'HDMI connected' : 'HDMI disconnected',
+        label: `now:${match[1]} = ${connected ? 'HDMI connected' : 'HDMI disconnected'}`,
         detail: connected
           ? 'The CEC daemon sees the display\'s hotplug-detect line go high.'
           : 'The CEC daemon sees the display\'s hotplug-detect line go low (display into standby, booting, or unplugged).',
@@ -350,12 +360,12 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
       const value = parseInt(match[1], 16);
       return value === 0
         ? {
-            label: 'Physical address 0.0.0.0',
+            label: `${match[1]} = no physical address`,
             detail: 'No valid EDID from the display, so the box has no HDMI address. CEC power on will fail at Active Source.',
             intent: 'warning'
           }
         : {
-            label: `Physical address ${formatPhysicalAddress(value >> 8, value & 0xff)}`,
+            label: `${match[1]} = physical address ${formatPhysicalAddress(value >> 8, value & 0xff)} (HDMI ${value >> 12})`,
             detail: `The box is on HDMI input ${value >> 12} of the display.`,
             intent: 'none'
           };
@@ -379,7 +389,7 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
     const to = addressName(parseInt(match[3], 10));
     const code = parseInt(match[4], 10);
     return {
-      label: `Send failed: ${match[1]}`,
+      label: `errorCode ${code} = ${SEND_RESULT_LABELS[code] ?? 'error'}, ${match[1]} not delivered`,
       detail: `Android's own CEC service (not Vivi) tried to send ${match[1]} from ${from} to ${to}, but ${SEND_RESULTS[code] ?? `error code ${code}`}.`,
       intent: 'warning'
     };
@@ -391,12 +401,12 @@ export function getCecAnnotation(logLine: ValidatedLogLine): CecAnnotation | nul
     if (match) {
       return match[1] === '0'
         ? {
-            label: 'HDMI plug out',
+            label: 'value 0 = HDMI plug out',
             detail: 'Hotplug-detect from the display dropped. Seen when the display goes into standby, reboots its main board, or is unplugged.',
             intent: 'warning'
           }
         : {
-            label: 'HDMI plug in',
+            label: 'value 1 = HDMI plug in',
             detail: 'Hotplug-detect from the display is back and the EDID is read next (SystemControl "Rx Manufacturer Name").',
             intent: 'none'
           };
