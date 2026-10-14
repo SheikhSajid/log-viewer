@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div style={{ fontWeight: 500, marginBottom: 6 }}>Log Source</div>
         <Checkbox checked={logSources.Box} label="Box" onChange={() => handleSourceChange('Box')} />
         <Checkbox checked={logSources.Syslog} label="Syslog" onChange={() => handleSourceChange('Syslog')} />
-        <Checkbox checked={logSources.Dmesg} disabled label="Dmesg" onChange={() => handleSourceChange('Dmesg')} />
+        <Checkbox checked={logSources.Dmesg} label="Dmesg" onChange={() => handleSourceChange('Dmesg')} />
       </div>
       <div>
         <div style={{ fontWeight: 500, marginBottom: 6 }}>Severity Level</div>

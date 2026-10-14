@@ -98,7 +98,7 @@ const LogContainer: React.FC<LogContainerProps> = ({
         height={height}
         itemCount={logLines.length}
         itemSize={itemSize}
-        width={"100%"}
+        width={"200%"}
         ref={listRef}
       >
         {Row}

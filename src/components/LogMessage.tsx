@@ -56,14 +56,25 @@ export const syslogSchema = z.object({
   }),
 });
 
+// dmesg schema (`dmesg -T` output has no severity, so every entry is treated as info)
+export const dmesgSchema = z.object({
+  level: z.literal('I'),
+  message: z.string(),
+  meta: z.object({
+    name: z.string(),
+    time_logged: z.string().transform((str) => new Date(str)),
+  }),
+});
+
 export type BoxLogEntry = z.infer<typeof logSchema>;
 export type SyslogEntry = z.infer<typeof syslogSchema>;
+export type DmesgEntry = z.infer<typeof dmesgSchema>;
 export type LogLevel = BoxLogEntry['level'] | SyslogEntry['level'];
 
 export interface ValidatedLogLine {
   valid: boolean;
   line: string;
-  parsedLog?: BoxLogEntry | SyslogEntry;
+  parsedLog?: BoxLogEntry | SyslogEntry | DmesgEntry;
   error?: string;
   id: string; // Unique ID for React key
   src: logSource
