@@ -2,6 +2,7 @@ import React from 'react';
 import { Drawer, Card, H4, Callout, Code, Divider, Button, Tooltip, Tabs, Tab, Pre } from "@blueprintjs/core";
 import { ValidatedLogLine } from './LogMessage';
 import { getCecAnnotation } from '../utils/cecAnnotations';
+import { getJoinAnnotation } from '../utils/joinAnnotations';
 
 interface LogDrawerProps {
   isOpen: boolean;
@@ -23,7 +24,12 @@ const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, sel
     }
   }, [selectedLog]);
 
-  const cecAnnotation = selectedLog ? getCecAnnotation(selectedLog) : null;
+  const annotations = selectedLog
+    ? [
+        { topic: 'CEC', annotation: getCecAnnotation(selectedLog) },
+        { topic: 'Join', annotation: getJoinAnnotation(selectedLog) }
+      ].flatMap(({ topic, annotation }) => annotation ? [{ topic, ...annotation }] : [])
+    : [];
 
   return (
     <Drawer
@@ -41,16 +47,17 @@ const LogDrawer: React.FC<LogDrawerProps> = ({ isOpen, onClose, selectedLog, sel
           <div style={{ marginBottom: 10 }}>
             <b>Message:</b> <Callout intent={selectedLog.parsedLog.level === 'error' ? 'danger' : selectedLog.parsedLog.level === 'warn' ? 'warning' : selectedLog.parsedLog.level === 'info' ? 'primary' : 'none'}>{selectedLog.parsedLog.message}</Callout>
           </div>
-          {cecAnnotation && (
+          {annotations.map(({ topic, label, detail, intent }) => (
             <Callout
-              title={`CEC: ${cecAnnotation.label}`}
-              intent={cecAnnotation.intent === 'none' ? 'primary' : cecAnnotation.intent}
+              key={topic}
+              title={`${topic}: ${label}`}
+              intent={intent === 'none' ? 'primary' : intent}
               icon="info-sign"
               style={{ marginBottom: 10 }}
             >
-              {cecAnnotation.detail}
+              {detail}
             </Callout>
-          )}
+          ))}
           <div style={{ marginBottom: 10 }}>
             <b>Source:</b> {selectedLog.parsedLog.meta.name}
           </div>

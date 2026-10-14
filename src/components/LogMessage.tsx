@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Text, Tag, Tooltip, Collapse, Pre, Button } from "@blueprintjs/core";
 import { logSource } from './Sidebar';
 import { getCecAnnotation, CecIntent } from '../utils/cecAnnotations';
+import { getJoinAnnotation } from '../utils/joinAnnotations';
 
 // box log schema
 export const logSchema = z.object({
@@ -258,7 +259,11 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
     }
   }
 
-  const cecAnnotation = getCecAnnotation(logLine);
+  // Annotation pills explaining what the line means, each with the topic it belongs to
+  const annotations = [
+    { topic: 'CEC', annotation: getCecAnnotation(logLine) },
+    { topic: 'Join', annotation: getJoinAnnotation(logLine) }
+  ].flatMap(({ topic, annotation }) => annotation ? [{ topic, ...annotation }] : []);
 
   // Table-like row layout
   return (
@@ -287,8 +292,8 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
         <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis' }} title={log.meta.name}>{log.meta.name}</div>
         {/* Message/Content + Tags */}
         <div style={{ color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
-          {cecAnnotation && (
-            <Tooltip content={<div style={{ maxWidth: 420, whiteSpace: 'normal' }}>{cecAnnotation.detail}</div>} position="bottom-left">
+          {annotations.map(({ topic, label, detail, intent }) => (
+            <Tooltip key={topic} content={<div style={{ maxWidth: 420, whiteSpace: 'normal' }}>{detail}</div>} position="bottom-left">
               <Tag
                 minimal
                 rightIcon="info-sign"
@@ -297,15 +302,15 @@ const LogMessage: React.FC<{ logLine: ValidatedLogLine; selectedTimezone: string
                   height: 18,
                   lineHeight: '16px',
                   padding: '0 6px',
-                  background: CEC_INTENT_COLORS[cecAnnotation.intent],
+                  background: CEC_INTENT_COLORS[intent],
                   color: '#fff',
                   whiteSpace: 'nowrap'
                 }}
               >
-                CEC · {cecAnnotation.label}
+                {topic} · {label}
               </Tag>
             </Tooltip>
-          )}
+          ))}
           {tags.length > 0 && (
             <span style={{ display: 'flex', gap: 4 }}>
               {tags.map((tag, idx) => (

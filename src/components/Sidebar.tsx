@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { H5, Button, Checkbox, Collapse, Icon } from "@blueprintjs/core";
 import { DateInput3 } from "@blueprintjs/datetime2";
 import { LogLevel, CEC_INTENT_COLORS } from './LogMessage';
-import { CecTag } from '../utils/cec';
+import { AnnotationTag } from '../utils/annotationIndex';
 
 type logSource = 'Box' | 'Syslog' | 'Dmesg';
 
@@ -13,9 +13,12 @@ interface SidebarProps {
   handleSourceChange: (source: logSource) => void;
   severity: Record<LogLevel, boolean>;
   handleSeverityChange: (level: LogLevel) => void;
-  cecTags: CecTag[];
+  cecTags: AnnotationTag[];
   selectedCecTags: Set<string>;
   handleCecTagChange: (tag: string) => void;
+  userEventTags: AnnotationTag[];
+  selectedUserEvents: Set<string>;
+  handleUserEventChange: (tag: string) => void;
 }
 
 // Section with a clickable header that shows/hides its content. Filters keep applying while collapsed,
@@ -41,6 +44,30 @@ const CollapsibleSection: React.FC<{ title: string; activeCount: number; childre
   );
 };
 
+// Checkbox list of the annotation tags found in the loaded logs, with a count and the pill's colour
+const AnnotationTagList: React.FC<{ tags: AnnotationTag[]; selected: Set<string>; onToggle: (tag: string) => void; emptyText: string }> = ({ tags, selected, onToggle, emptyText }) => {
+  if (tags.length === 0) {
+    return <div style={{ fontSize: 13, color: '#5c7080' }}>{emptyText}</div>;
+  }
+  return (
+    <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+      {tags.map(({ tag, count, intent }) => (
+        <Checkbox
+          key={tag}
+          checked={selected.has(tag)}
+          onChange={() => onToggle(tag)}
+          labelElement={
+            <span title={tag} style={{ fontSize: 13 }}>
+              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 4, marginRight: 6, background: CEC_INTENT_COLORS[intent] }} />
+              {tag} <span style={{ color: '#5c7080', fontSize: 12 }}>({count.toLocaleString()})</span>
+            </span>
+          }
+        />
+      ))}
+    </div>
+  );
+};
+
 const Sidebar: React.FC<SidebarProps> = ({
   dateRange,
   setDateRange,
@@ -50,7 +77,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   handleSeverityChange,
   cecTags,
   selectedCecTags,
-  handleCecTagChange
+  handleCecTagChange,
+  userEventTags,
+  selectedUserEvents,
+  handleUserEventChange
 }) => {
   const [selectedDateRange, setSelectedDateRange] = useState<{ start: Date | null, end: Date | null }>({ ...dateRange });
 
@@ -118,25 +148,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         <Checkbox checked={severity.D} label="Debug (Syslog only)" onChange={() => handleSeverityChange('D')} />
       </CollapsibleSection>
       <CollapsibleSection title="CEC" activeCount={selectedCecTags.size} style={{ marginTop: 18 }}>
-        {cecTags.length === 0 ? (
-          <div style={{ fontSize: 13, color: '#5c7080' }}>No CEC tags detected</div>
-        ) : (
-          <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-            {cecTags.map(({ tag, count, intent }) => (
-              <Checkbox
-                key={tag}
-                checked={selectedCecTags.has(tag)}
-                onChange={() => handleCecTagChange(tag)}
-                labelElement={
-                  <span title={tag} style={{ fontSize: 13 }}>
-                    <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 4, marginRight: 6, background: CEC_INTENT_COLORS[intent] }} />
-                    {tag} <span style={{ color: '#5c7080', fontSize: 12 }}>({count.toLocaleString()})</span>
-                  </span>
-                }
-              />
-            ))}
-          </div>
-        )}
+        <AnnotationTagList tags={cecTags} selected={selectedCecTags} onToggle={handleCecTagChange} emptyText="No CEC tags detected" />
+      </CollapsibleSection>
+      <CollapsibleSection title="User Events" activeCount={selectedUserEvents.size} style={{ marginTop: 18 }}>
+        <AnnotationTagList tags={userEventTags} selected={selectedUserEvents} onToggle={handleUserEventChange} emptyText="No user events detected" />
       </CollapsibleSection>
     </div>
   );

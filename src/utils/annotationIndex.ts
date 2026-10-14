@@ -1,26 +1,29 @@
 import type { ValidatedLogLine } from '../components/LogMessage';
-import { getCecAnnotation, CecIntent } from './cecAnnotations';
+import type { CecIntent } from './cecAnnotations';
 
-// A CEC tag is the label of the blue "CEC · ..." pill shown on a log row (see cecAnnotations.ts)
-export interface CecTag {
+// A tag is the label of an annotation pill shown on a log row ("CEC · ...", "Join · ...").
+// The sidebar lists the tags found in the loaded logs so they can be used as filters.
+export interface AnnotationTag {
   tag: string;
   count: number;
   intent: CecIntent;
 }
 
-export interface CecIndex {
+export interface AnnotationIndex {
   /** Distinct tags found in the loaded logs, most frequent first */
-  tags: CecTag[];
+  tags: AnnotationTag[];
   /** The tag of each annotated log line, for filtering */
   tagOf: WeakMap<ValidatedLogLine, string>;
 }
 
-export function buildCecIndex(logs: ValidatedLogLine[]): CecIndex {
-  const counts = new Map<string, CecTag>();
+type GetAnnotation = (log: ValidatedLogLine) => { label: string; intent: CecIntent } | null;
+
+export function buildAnnotationIndex(logs: ValidatedLogLine[], getAnnotation: GetAnnotation): AnnotationIndex {
+  const counts = new Map<string, AnnotationTag>();
   const tagOf = new WeakMap<ValidatedLogLine, string>();
 
   for (const log of logs) {
-    const annotation = getCecAnnotation(log);
+    const annotation = getAnnotation(log);
     if (!annotation) continue;
     tagOf.set(log, annotation.label);
     const existing = counts.get(annotation.label);

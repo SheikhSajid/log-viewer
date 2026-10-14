@@ -9,7 +9,9 @@ import LogContainer from './components/LogContainer';
 import { tokenizeSearchTerm } from './utils/search';
 import { buildTimezoneOptions } from './utils/timezone';
 import { BoxInfo } from './utils/boxInfo';
-import { buildCecIndex } from './utils/cec';
+import { buildAnnotationIndex } from './utils/annotationIndex';
+import { getCecAnnotation } from './utils/cecAnnotations';
+import { getJoinAnnotation } from './utils/joinAnnotations';
 
 import './index.css';
 import "@blueprintjs/core/lib/css/blueprint.css";
@@ -114,19 +116,23 @@ const App: React.FC = () => {
   const [logSources, setLogSources] = useState<Record<logSource, boolean>>({ Box: false, Syslog: false, Dmesg: false });
   const [severity, setSeverity] = useState<Record<LogLevel, boolean>>({ error: false, warn: false, info: false, verbose: false, D: false, I: false, W: false, E: false, V: false });
 
-  // CEC tags (the labels of the "CEC · ..." pills) found in the loaded logs, and the ones ticked in the sidebar
-  const cecIndex = useMemo(() => buildCecIndex(allLogs), [allLogs]);
-  const cecTags = cecIndex.tags;
+  // Annotation tags (the labels of the "CEC · ..." and "Join · ..." pills) found in the loaded logs,
+  // and the ones ticked in the sidebar
+  const cecIndex = useMemo(() => buildAnnotationIndex(allLogs, getCecAnnotation), [allLogs]);
+  const userEventIndex = useMemo(() => buildAnnotationIndex(allLogs, getJoinAnnotation), [allLogs]);
   const [selectedCecTags, setSelectedCecTags] = useState<Set<string>>(new Set());
+  const [selectedUserEvents, setSelectedUserEvents] = useState<Set<string>>(new Set());
 
   // Forget selected tags that no longer exist after loading different logs
   useEffect(() => {
-    setSelectedCecTags(selected => {
-      const available = new Set(cecTags.map(t => t.tag));
+    const prune = (tags: { tag: string }[]) => (selected: Set<string>) => {
+      const available = new Set(tags.map(t => t.tag));
       const kept = [...selected].filter(tag => available.has(tag));
       return kept.length === selected.size ? selected : new Set(kept);
-    });
-  }, [cecTags]);
+    };
+    setSelectedCecTags(prune(cecIndex.tags));
+    setSelectedUserEvents(prune(userEventIndex.tags));
+  }, [cecIndex, userEventIndex]);
 
   useEffect(() => {
     let currentLogs = allLogs;
@@ -144,9 +150,11 @@ const App: React.FC = () => {
       currentLogs = currentLogs.filter(log => selectedSources.includes(log.src));
     }
 
-    // CEC tag filtering
-    if (selectedCecTags.size > 0) {
-      currentLogs = currentLogs.filter(log => selectedCecTags.has(cecIndex.tagOf.get(log) ?? ''));
+    // Annotation tag filtering (CEC and user events): keep logs carrying any of the ticked tags
+    if (selectedCecTags.size > 0 || selectedUserEvents.size > 0) {
+      currentLogs = currentLogs.filter(log =>
+        selectedCecTags.has(cecIndex.tagOf.get(log) ?? '') || selectedUserEvents.has(userEventIndex.tagOf.get(log) ?? '')
+      );
     }
 
     // Date filtering
@@ -221,7 +229,7 @@ const App: React.FC = () => {
     }
     setMatchCount(matches);
     setFilteredLogs(currentLogs);
-  }, [allLogs, logSources, searchTerm, severity, dateRange, onlyShowMatching, selectedCecTags, cecIndex]);
+  }, [allLogs, logSources, searchTerm, severity, dateRange, onlyShowMatching, selectedCecTags, cecIndex, selectedUserEvents, userEventIndex]);
 
   // When matchIndex changes, scroll to the new match (only when not onlyShowMatching)
   useEffect(() => {
@@ -265,11 +273,13 @@ const App: React.FC = () => {
 
   // Sidebar filter handlers
   const handleSourceChange = (source: logSource) => setLogSources(s => ({ ...s, [source]: !s[source] }));
-  const handleCecTagChange = (tag: string) => setSelectedCecTags(selected => {
+  const toggleIn = (tag: string) => (selected: Set<string>) => {
     const next = new Set(selected);
     if (!next.delete(tag)) next.add(tag);
     return next;
-  });
+  };
+  const handleCecTagChange = (tag: string) => setSelectedCecTags(toggleIn(tag));
+  const handleUserEventChange = (tag: string) => setSelectedUserEvents(toggleIn(tag));
   const handleSeverityChange = (level: LogLevel) => setSeverity(s => ({ ...s, [level]: !s[level] }));
 
   const handlePrevMatch = () => {
@@ -295,9 +305,12 @@ const App: React.FC = () => {
         handleSourceChange={handleSourceChange}
         severity={severity}
         handleSeverityChange={handleSeverityChange}
-        cecTags={cecTags}
+        cecTags={cecIndex.tags}
         selectedCecTags={selectedCecTags}
         handleCecTagChange={handleCecTagChange}
+        userEventTags={userEventIndex.tags}
+        selectedUserEvents={selectedUserEvents}
+        handleUserEventChange={handleUserEventChange}
       />
 
       {/* Main content */}
