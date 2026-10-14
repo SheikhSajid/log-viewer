@@ -70,6 +70,15 @@ function zoneOffsetMs(utcMs: number, timeZone: string): number {
   return asUtc - Math.floor(utcMs / 1000) * 1000;
 }
 
+/** Convert a wall-clock time recorded in `timeZone` to a UTC epoch (ms). */
+export function wallTimeToUtcMs(year: number, month: number, day: number, hour: number, minute: number, second: number, timeZone: string): number {
+  const wall = Date.UTC(year, month - 1, day, hour, minute, second);
+  // Two passes so the offset is taken at the resulting instant (handles DST boundaries)
+  let utc = wall - zoneOffsetMs(wall, timeZone);
+  utc = wall - zoneOffsetMs(utc, timeZone);
+  return utc;
+}
+
 /**
  * Convert a `dmesg -T` wall-clock time such as "Tue Sep 22 05:42:22 2026" recorded in `timeZone`
  * to an ISO UTC string. Returns null if the text is not a valid date.
@@ -79,10 +88,6 @@ export function dmesgWallTimeToIso(text: string, timeZone: string): string | nul
   if (!match) return null;
   const month = MONTHS.indexOf(match[1]);
   if (month < 0) return null;
-  const wall = Date.UTC(+match[6], month, +match[2], +match[3], +match[4], +match[5]);
-  // Two passes so the offset is taken at the resulting instant (handles DST boundaries)
-  let utc = wall - zoneOffsetMs(wall, timeZone);
-  utc = wall - zoneOffsetMs(utc, timeZone);
-  const date = new Date(utc);
+  const date = new Date(wallTimeToUtcMs(+match[6], month + 1, +match[2], +match[3], +match[4], +match[5], timeZone));
   return isNaN(date.getTime()) ? null : date.toISOString();
 }

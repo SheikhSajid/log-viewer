@@ -51,3 +51,18 @@
 .remove-file-btn {
   margin-left: 0.5rem;
 }
+
+.recent-folder {
+  cursor: pointer;
+}
+
+.recent-folder:hover {
+  background-color: rgba(72, 175, 240, 0.12);
+}
+
+.recent-folder-id {
+  margin-left: 0.75rem;
+  color: #8A9BA8;
+  font-family: monospace;
+  font-size: 0.85em;
+}

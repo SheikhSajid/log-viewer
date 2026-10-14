@@ -1,5 +1,8 @@
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs/promises';
+import { LOG_FOLDERS_ROOT_NAME } from './utils/logFolders';
 // import started from 'electron-squirrel-startup';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -45,6 +48,47 @@ const createWindow = async () => {
   }
 });
 };
+
+// Downloaded box logs: the renderer is sandboxed from the file system, so it asks the main process
+const logFoldersRoot = path.join(os.homedir(), LOG_FOLDERS_ROOT_NAME);
+
+// Only plain names are accepted so the renderer cannot reach outside the logs folder
+function resolveInRoot(...names: string[]): string {
+  for (const name of names) {
+    if (!name || name !== path.basename(name) || name === '.' || name === '..') {
+      throw new Error(`Invalid name: ${name}`);
+    }
+  }
+  return path.join(logFoldersRoot, ...names);
+}
+
+ipcMain.handle('log-folders:list-folders', async () => {
+  try {
+    const entries = await fs.readdir(logFoldersRoot, { withFileTypes: true });
+    const folders = await Promise.all(
+      entries.filter(e => e.isDirectory()).map(async e => ({
+        name: e.name,
+        createdMs: (await fs.stat(path.join(logFoldersRoot, e.name))).birthtimeMs,
+      }))
+    );
+    return { folders };
+  } catch (error) {
+    // A missing folder just means nothing has been downloaded yet; anything else (e.g. EPERM from
+    // macOS blocking access to Downloads) is worth telling the user about
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { folders: [] };
+    console.error(`Could not read ${logFoldersRoot}:`, error);
+    return { folders: [], error: (error as NodeJS.ErrnoException).code ?? 'unknown error' };
+  }
+});
+
+ipcMain.handle('log-folders:list-files', async (_event, folder: string) => {
+  const entries = await fs.readdir(resolveInRoot(folder), { withFileTypes: true });
+  return entries.filter(e => e.isFile()).map(e => e.name);
+});
+
+ipcMain.handle('log-folders:read-file', async (_event, folder: string, file: string) => {
+  return fs.readFile(resolveInRoot(folder, file));
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

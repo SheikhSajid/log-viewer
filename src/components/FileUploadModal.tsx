@@ -1,8 +1,9 @@
-import React, { useCallback, useState, useRef, ChangeEvent } from 'react';
-import { Dialog, Button, Classes, Intent, Divider } from "@blueprintjs/core";
+import React, { useCallback, useState, useRef, useEffect, ChangeEvent } from 'react';
+import { Dialog, Button, Classes, Intent, Divider, Spinner } from "@blueprintjs/core";
 import { ValidatedLogLine } from './LogMessage';
 import { dummyBoxLogs } from '../dummy_data/boxlogs';
 import { logSchema } from './LogMessage';
+import { LogFolderEntry, recentLogFolders, formatLogFolderRange } from '../utils/logFolders';
 import './FileUploadModal.css';
 
 // Helper to get files from a directory (top level only)
@@ -91,6 +92,23 @@ interface FileUploadModalProps {
   onLogsLoaded: (logs: ValidatedLogLine[]) => void;
 }
 
+// Read a folder from the downloaded logs directory into File objects (a few at a time, files can be large)
+async function readLogFolder(folder: string): Promise<File[]> {
+  const api = window.logFolders;
+  if (!api) return [];
+  const names = (await api.listFiles(folder)).filter(name => !name.startsWith('.'));
+  const files: File[] = new Array(names.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < names.length) {
+      const i = next++;
+      files[i] = new File([await api.readFile(folder, names[i])], names[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(8, names.length) }, worker));
+  return files;
+}
+
 function isSupportedLogFile(file: File) {
   const name = file.name.toLowerCase();
   return name.includes('box') || name.includes('syslog') || name.includes('dmesg');
@@ -133,6 +151,43 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [recentFolders, setRecentFolders] = useState<LogFolderEntry[]>([]);
+  const [loadingFolder, setLoadingFolder] = useState<string | null>(null);
+  const [folderError, setFolderError] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+
+  // Refresh the list every time the dialog opens, new downloads may have arrived
+  useEffect(() => {
+    if (!isOpen || !window.logFolders) return;
+    let cancelled = false;
+    window.logFolders.listFolders()
+      .then(({ folders, error }) => {
+        if (cancelled) return;
+        setRecentFolders(recentLogFolders(folders));
+        setListError(error ?? null);
+      })
+      .catch(() => { if (!cancelled) setRecentFolders([]); });
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
+  const handleOpenFolder = async (entry: LogFolderEntry) => {
+    setLoadingFolder(entry.name);
+    setFolderError(null);
+    try {
+      const files = await readLogFolder(entry.name);
+      if (files.length === 0) {
+        setFolderError('That folder has no files.');
+        return;
+      }
+      onFilesSelected(files);
+      onClose();
+    } catch (error) {
+      console.error('Error reading log folder:', error);
+      setFolderError('Could not read that folder.');
+    } finally {
+      setLoadingFolder(null);
+    }
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -281,6 +336,34 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
               ))}
             </div>
           </div>
+        )}
+
+        {recentFolders.length > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <h4>Recent downloads</h4>
+            <div className="file-list">
+              {recentFolders.map(entry => (
+                <div
+                  key={entry.name}
+                  className="file-item recent-folder"
+                  onClick={() => !loadingFolder && handleOpenFolder(entry)}
+                  title={entry.name}
+                >
+                  <span className="file-name">
+                    {formatLogFolderRange(entry)}
+                    <span className="recent-folder-id">{entry.boxId.slice(0, 8)}</span>
+                  </span>
+                  {loadingFolder === entry.name ? <Spinner size={16} /> : <Button minimal small icon="folder-open" disabled={!!loadingFolder} />}
+                </div>
+              ))}
+            </div>
+            {folderError && <p style={{ color: '#FF7373', marginTop: '0.5rem' }}>{folderError}</p>}
+          </div>
+        )}
+        {listError && (
+          <p style={{ color: '#FF7373', marginTop: '1rem' }}>
+            Could not read the Downloaded Box Logs folder ({listError}). If macOS asked for access to Downloads, allow it and reopen this dialog.
+          </p>
         )}
       </div>
       <Divider style={{ margin: '15px 0' }} />

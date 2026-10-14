@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
@@ -11,8 +13,24 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: './assets/icon', // Forge picks the right extension per platform (.icns on macOS)
+    // A dedicated bundle id keeps macOS privacy permissions (e.g. Downloads access) specific to this app
+    appBundleId: 'io.vivi.log-viewer',
+    extendInfo: {
+      NSDownloadsFolderUsageDescription: 'Log Viewer lists and opens the box logs you have downloaded to the Downloaded Box Logs folder.',
+    },
   },
   rebuildConfig: {},
+  hooks: {
+    // Unsigned builds get an ad-hoc signature whose identifier is the generic "com.github.Electron",
+    // shared with every other unsigned Electron app. Re-sign with the app's own identifier so macOS
+    // (TCC) tracks permissions for this app alone.
+    postPackage: async (_config, packageResult) => {
+      if (packageResult.platform !== 'darwin') return;
+      for (const outputPath of packageResult.outputPaths) {
+        execFileSync('codesign', ['--force', '--deep', '--sign', '-', '--identifier', 'io.vivi.log-viewer', path.join(outputPath, 'log-viewer.app')]);
+      }
+    },
+  },
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
   plugins: [
     new VitePlugin({
