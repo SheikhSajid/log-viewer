@@ -72,11 +72,21 @@ const NavbarBar: React.FC<NavbarBarProps> = ({
     <Navbar style={{ height: 65 }}>
     <NavbarGroup align={Alignment.LEFT} style={{ width: '100%', alignItems: 'flex-start' }}>
       <NavbarHeading>Log Viewer</NavbarHeading>
-      {boxInfo && (boxInfo.roomName || boxInfo.macAddress) && (
-        <div style={{ display: 'flex', flexDirection: 'column', marginRight: 16, paddingTop: 2, lineHeight: '17px', fontSize: 12, color: '#182026', maxWidth: 260 }}>
-          {boxInfo.roomName && (
-            <span title={boxInfo.roomName} style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {boxInfo.roomName}
+      {boxInfo && (boxInfo.roomName || boxInfo.orgName || boxInfo.macAddress) && (
+        <div style={{ display: 'flex', flexDirection: 'column', marginRight: 16, paddingTop: 2, lineHeight: '17px', fontSize: 12, color: '#182026', maxWidth: 280 }}>
+          {(boxInfo.roomName || boxInfo.orgName) && (
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+              {boxInfo.roomName && (
+                <span title={boxInfo.roomName} style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {boxInfo.roomName}
+                </span>
+              )}
+              {boxInfo.roomName && boxInfo.orgName && <span style={{ opacity: 0.5, marginLeft: -2, marginRight: -2 }}>{'\u00b7'}</span>}
+              {boxInfo.orgName && (
+                <span title={boxInfo.orgId ? `Org ID: ${boxInfo.orgId}` : undefined} style={{ opacity: 0.75, flexShrink: 0 }}>
+                  {boxInfo.orgName}
+                </span>
+              )}
             </span>
           )}
           {boxInfo.macAddress && (
