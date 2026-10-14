@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { H5, Button, Checkbox } from "@blueprintjs/core";
+import { H5, Button, Checkbox, Collapse, Icon } from "@blueprintjs/core";
 import { DateInput3 } from "@blueprintjs/datetime2";
 import { LogLevel } from './LogMessage';
 
@@ -13,6 +13,29 @@ interface SidebarProps {
   severity: Record<LogLevel, boolean>;
   handleSeverityChange: (level: LogLevel) => void;
 }
+
+// Section with a clickable header that shows/hides its content. Filters keep applying while collapsed,
+// so the header shows how many are selected.
+const CollapsibleSection: React.FC<{ title: string; activeCount: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ title, activeCount, children, style }) => {
+  const [isOpen, setIsOpen] = useState(true);
+  return (
+    <div style={style}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen(open => !open)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(open => !open); } }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500, marginBottom: 6, cursor: 'pointer', userSelect: 'none' }}
+      >
+        <Icon icon={isOpen ? 'chevron-down' : 'chevron-right'} size={14} />
+        <span>{title}</span>
+        {!isOpen && activeCount > 0 && <span style={{ fontWeight: 400, fontSize: 12, color: '#5c7080' }}>({activeCount} selected)</span>}
+      </div>
+      <Collapse isOpen={isOpen}>{children}</Collapse>
+    </div>
+  );
+};
 
 const Sidebar: React.FC<SidebarProps> = ({
   dateRange,
@@ -75,20 +98,18 @@ const Sidebar: React.FC<SidebarProps> = ({
           <Button small minimal>Last 30d</Button>
         </div>
       </div>
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontWeight: 500, marginBottom: 6 }}>Log Source</div>
+      <CollapsibleSection title="Log Source" activeCount={Object.values(logSources).filter(Boolean).length} style={{ marginBottom: 18 }}>
         <Checkbox checked={logSources.Box} label="Box" onChange={() => handleSourceChange('Box')} />
         <Checkbox checked={logSources.Syslog} label="Syslog" onChange={() => handleSourceChange('Syslog')} />
         <Checkbox checked={logSources.Dmesg} label="Dmesg" onChange={() => handleSourceChange('Dmesg')} />
-      </div>
-      <div>
-        <div style={{ fontWeight: 500, marginBottom: 6 }}>Severity Level</div>
+      </CollapsibleSection>
+      <CollapsibleSection title="Severity Level" activeCount={Object.values(severity).filter(Boolean).length}>
         <Checkbox checked={severity.error} label="Error" onChange={() => handleSeverityChange('error')} />
         <Checkbox checked={severity.warn} label="Warning" onChange={() => handleSeverityChange('warn')} />
         <Checkbox checked={severity.info} label="Info" onChange={() => handleSeverityChange('info')} />
         <Checkbox checked={severity.verbose} label="Verbose" onChange={() => handleSeverityChange('verbose')} />
         <Checkbox checked={severity.D} label="Debug (Syslog only)" onChange={() => handleSeverityChange('D')} />
-      </div>
+      </CollapsibleSection>
     </div>
   );
 };
